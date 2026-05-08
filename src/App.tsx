@@ -16,6 +16,7 @@ import TermsPage from "./pages/public/TermsPage";
 import ContactPage from "./pages/public/ContactPage";
 import GetStartedPage from "./pages/public/GetStartedPage";
 import SubscriptionBlockedPage from "./pages/auth/SubscriptionBlockedPage";
+import SubscriptionPage from "./pages/subscription/SubscriptionPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ProductsPage from "./pages/products/ProductsPage";
