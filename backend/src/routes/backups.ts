@@ -178,6 +178,7 @@ const upload = multer({
     cb(null, true);
   },
 });
+const handleBackupUpload = upload.single('file') as unknown as import('express').RequestHandler;
 
 // ── GET / — list backup_logs (and self-heal vps_local rows) ────────
 router.get('/', async (_req: Request, res: Response) => {
@@ -337,7 +338,7 @@ router.post('/restore', async (req: Request, res: Response) => {
 });
 
 // ── POST /upload — manual backup upload ────────────────────────────
-router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload', handleBackupUpload, async (req: Request, res: Response) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: 'No file uploaded (field name: "file").' });
 
