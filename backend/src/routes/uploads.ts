@@ -35,7 +35,7 @@ const ALLOWED_MIME = new Set([
 
 const storage = multer.diskStorage({
   destination(req, _file, cb) {
-    const dealerId = (req as Request).dealerId || (req as any).body?.dealerId;
+    const dealerId = (req as unknown as Request).dealerId || (req as any).body?.dealerId;
     if (!dealerId) {
       cb(new Error('No dealer scope'), '');
       return;
@@ -61,6 +61,11 @@ const upload = multer({
     cb(null, true);
   },
 });
+const handleProductImageUpload = upload.single('file') as unknown as (
+  req: Request,
+  res: Response,
+  callback: (err?: any) => void,
+) => void;
 
 router.use(authenticate, tenantGuard);
 
@@ -68,7 +73,7 @@ router.post(
   '/product-image',
   requireRole('dealer_admin'),
   (req: Request, res: Response) => {
-    upload.single('file')(req, res, (err: any) => {
+    handleProductImageUpload(req, res, (err: any) => {
       if (err) {
         res.status(400).json({ error: err.message || 'Upload failed' });
         return;
