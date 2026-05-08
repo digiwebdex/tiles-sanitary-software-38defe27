@@ -159,6 +159,16 @@ const SubscriptionPage = () => {
         {plansQuery.isLoading && (
           <p className="text-muted-foreground text-sm col-span-full">Loading plans…</p>
         )}
+        {plansQuery.isError && (
+          <p className="text-red-600 text-sm col-span-full">
+            Failed to load plans: {(plansQuery.error as Error)?.message || "Unknown error"}
+          </p>
+        )}
+        {!plansQuery.isLoading && !plansQuery.isError && plans.length === 0 && (
+          <p className="text-muted-foreground text-sm col-span-full">
+            No plans available. Please contact support.
+          </p>
+        )}
         {plans.map((plan, idx) => {
           const isCurrent = sub?.plan_id === plan.id;
           const ribbon = planRibbon(plan, plans, isCurrent);
