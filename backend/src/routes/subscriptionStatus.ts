@@ -106,4 +106,160 @@ router.get('/status', async (req: Request, res: Response) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────
+// Dealer-facing subscription self-service (current plan, plan list,
+// payment history, upgrade request). Scoped by req.user.dealerId.
+// ─────────────────────────────────────────────────────────────────────
+
+function requireDealer(req: Request, res: Response): string | null {
+  const dealerId = req.user?.dealerId;
+  if (!dealerId) {
+    res.status(403).json({ error: 'Dealer scope required' });
+    return null;
+  }
+  return dealerId;
+}
+
+/** GET /api/subscription/current — dealer's most recent subscription joined with plan. */
+router.get('/current', async (req: Request, res: Response) => {
+  try {
+    const dealerId = requireDealer(req, res);
+    if (!dealerId) return;
+
+    const sub = await db('subscriptions as s')
+      .leftJoin('plans as p', 'p.id', 's.plan_id')
+      .where('s.dealer_id', dealerId)
+      .orderBy('s.start_date', 'desc')
+      .orderBy('s.created_at', 'desc')
+      .select(
+        's.id', 's.dealer_id', 's.plan_id', 's.status', 's.billing_cycle',
+        's.start_date', 's.end_date', 's.yearly_discount_applied',
+        'p.name as plan_name', 'p.price_monthly', 'p.price_yearly', 'p.max_users',
+        'p.sms_enabled', 'p.email_enabled', 'p.daily_summary_enabled',
+        'p.features as plan_features', 'p.is_trial', 'p.sort_order',
+      )
+      .first();
+
+    res.json({ subscription: sub ?? null });
+  } catch (err: any) {
+    console.error('[subscription/current]', err.message);
+    res.status(500).json({ error: 'Failed to load subscription' });
+  }
+});
+
+/** GET /api/subscription/plans — active plans visible to dealers. */
+router.get('/plans', async (_req: Request, res: Response) => {
+  try {
+    const plans = await db('plans')
+      .where({ is_active: true })
+      .select(
+        'id', 'name', 'price_monthly', 'price_yearly', 'max_users',
+        'sms_enabled', 'email_enabled', 'daily_summary_enabled',
+        'is_trial', 'trial_days', 'sort_order', 'features',
+      )
+      .orderBy('sort_order', 'asc')
+      .orderBy('price_monthly', 'asc');
+    res.json({ plans });
+  } catch (err: any) {
+    console.error('[subscription/plans]', err.message);
+    res.status(500).json({ error: 'Failed to load plans' });
+  }
+});
+
+/** GET /api/subscription/payments — dealer's own subscription payments / requests. */
+router.get('/payments', async (req: Request, res: Response) => {
+  try {
+    const dealerId = requireDealer(req, res);
+    if (!dealerId) return;
+
+    const rows = await db('subscription_payments as sp')
+      .leftJoin('plans as p', 'p.id', 'sp.requested_plan_id')
+      .where('sp.dealer_id', dealerId)
+      .orderBy('sp.payment_date', 'desc')
+      .orderBy('sp.created_at', 'desc')
+      .select(
+        'sp.id', 'sp.amount', 'sp.payment_method', 'sp.payment_status',
+        'sp.payment_date', 'sp.note', 'sp.created_at',
+        'sp.requested_plan_id', 'sp.requested_billing_cycle', 'sp.source',
+        'p.name as requested_plan_name',
+      )
+      .limit(100);
+
+    res.json({ payments: rows });
+  } catch (err: any) {
+    console.error('[subscription/payments]', err.message);
+    res.status(500).json({ error: 'Failed to load payments' });
+  }
+});
+
+/** POST /api/subscription/upgrade-request — dealer requests a plan change. */
+router.post('/upgrade-request', async (req: Request, res: Response) => {
+  try {
+    const dealerId = requireDealer(req, res);
+    if (!dealerId) return;
+
+    const { plan_id, billing_cycle, note } = req.body ?? {};
+    if (!plan_id || typeof plan_id !== 'string') {
+      res.status(400).json({ error: 'plan_id is required' });
+      return;
+    }
+    const cycle = billing_cycle === 'yearly' ? 'yearly' : 'monthly';
+
+    const plan = await db('plans').where({ id: plan_id, is_active: true }).first();
+    if (!plan) {
+      res.status(404).json({ error: 'Plan not found' });
+      return;
+    }
+
+    const sub = await db('subscriptions')
+      .where({ dealer_id: dealerId })
+      .orderBy('start_date', 'desc')
+      .orderBy('created_at', 'desc')
+      .first();
+    if (!sub) {
+      res.status(400).json({ error: 'No active subscription found' });
+      return;
+    }
+
+    // Reject duplicate pending request for the same plan + cycle
+    const existing = await db('subscription_payments')
+      .where({
+        dealer_id: dealerId,
+        requested_plan_id: plan_id,
+        requested_billing_cycle: cycle,
+        payment_status: 'pending',
+      })
+      .first();
+    if (existing) {
+      res.status(409).json({ error: 'A pending request for this plan already exists' });
+      return;
+    }
+
+    const amount = cycle === 'yearly'
+      ? Number(plan.price_yearly || 0)
+      : Number(plan.price_monthly || 0);
+
+    const [row] = await db('subscription_payments')
+      .insert({
+        dealer_id: dealerId,
+        subscription_id: sub.id,
+        amount,
+        payment_method: 'bank',
+        payment_status: 'pending',
+        payment_date: db.fn.now(),
+        note: note ? String(note).slice(0, 500) : `Upgrade request: ${plan.name} (${cycle})`,
+        requested_plan_id: plan_id,
+        requested_billing_cycle: cycle,
+        source: 'dealer_request',
+        collected_by: req.user?.id ?? null,
+      })
+      .returning('*');
+
+    res.json({ payment: row });
+  } catch (err: any) {
+    console.error('[subscription/upgrade-request]', err.message);
+    res.status(500).json({ error: err.message || 'Failed to submit request' });
+  }
+});
+
 export default router;
