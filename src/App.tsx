@@ -135,6 +135,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <HostEntryRedirect />
+          <ScrollToTop />
           <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
