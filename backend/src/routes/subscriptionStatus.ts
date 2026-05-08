@@ -251,7 +251,7 @@ router.post('/upgrade-request', async (req: Request, res: Response) => {
         requested_plan_id: plan_id,
         requested_billing_cycle: cycle,
         source: 'dealer_request',
-        collected_by: req.user?.id ?? null,
+        collected_by: req.user?.userId ?? null,
       })
       .returning('*');
 
