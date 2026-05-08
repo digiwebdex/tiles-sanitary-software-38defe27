@@ -40,6 +40,7 @@ const navItems = [
   { path: "/admin/portal-users", label: "Portal Users", icon: UserCog, dealerAdminOnly: true },
   { path: "/admin/portal-requests", label: "Portal Requests", icon: Inbox, dealerAdminOnly: true },
   { path: "/user-guide", label: "User Guide", icon: HelpCircle, readonlyAllowed: true },
+  { path: "/subscription", label: "Subscription", icon: Crown, dealerAdminOnly: true, readonlyAllowed: true },
   { path: "/settings", label: "Settings", icon: Settings, readonlyAllowed: false },
 ];
 
