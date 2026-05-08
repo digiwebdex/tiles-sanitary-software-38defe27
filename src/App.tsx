@@ -8,6 +8,7 @@ import { getHostEntryRedirect } from "@/lib/hostRouting";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
+import ScrollToTop from "@/components/ScrollToTop";
 import LoginPage from "./pages/auth/LoginPage";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/public/PricingPage";
@@ -134,6 +135,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <HostEntryRedirect />
+          <ScrollToTop />
           <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
