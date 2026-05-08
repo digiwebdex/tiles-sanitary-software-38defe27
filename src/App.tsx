@@ -16,6 +16,7 @@ import TermsPage from "./pages/public/TermsPage";
 import ContactPage from "./pages/public/ContactPage";
 import GetStartedPage from "./pages/public/GetStartedPage";
 import SubscriptionBlockedPage from "./pages/auth/SubscriptionBlockedPage";
+import SubscriptionPage from "./pages/subscription/SubscriptionPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ProductsPage from "./pages/products/ProductsPage";
@@ -165,6 +166,7 @@ const App = () => (
             <Route path="/reports" element={<ProtectedRoute allowReadonly><AppLayout><ReportsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/reports/credit" element={<ProtectedRoute allowReadonly><AppLayout><CreditReportPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/subscription" element={<ProtectedRoute allowReadonly><AppLayout><SubscriptionPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/pricing-tiers" element={<ProtectedRoute><AppLayout><PricingTiersPage /></AppLayout></ProtectedRoute>} />
 
             {/* Full-access routes */}
