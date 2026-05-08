@@ -1,45 +1,61 @@
-## Problem
+# Dealer Subscription Page
 
-You're receiving daily Bengali SMS reports addressed to "Shamin" on `+8801674533303`. Investigation shows:
+Add a dealer-facing **Subscription** page (like the first reference image) so a dealer admin can see the software plan they're on, what other plans are available, and request upgrades / view past payments.
 
-- "Shamin" **does exist** in the database as a dealer (id `2b73d124-…`, status `active`, subscription valid until 2026-05-27, created 2026-04-25). It's the only dealer in the DB right now — likely a stray self-signup / test account you don't recognize.
-- The `daily-summary` Supabase edge function fetches dealers by reading `notification_settings` directly. It does **not** check `dealers.status` or whether the dealer has an `active` subscription — so any row in `notification_settings` with the SMS/email toggle on gets a daily blast, even if the dealer is pending, suspended, or has an expired subscription.
+## What the page shows
 
-## Fix (two parts)
+1. **Current Plan card**
+   - Plan name (Basic/Pro/Business/Custom)
+   - Status badge: Active / Expiring Soon / Grace / Expired / Suspended
+   - Expiry date + days remaining
+   - Billing cycle (Monthly / Yearly)
 
-### 1. Remove the orphan dealer
-Migration that fully deletes dealer `Shamin` and all its dependent data (notifications, settings, subscriptions, ledgers, etc.) from the database. Most child tables already have `ON DELETE CASCADE` from earlier migrations; the migration will explicitly delete from `notification_settings`, `subscriptions`, `subscription_payments`, and finally from `dealers` to be safe.
+2. **Plan comparison grid** (4 cards, like the reference)
+   - Pulls active plans from `plans` table
+   - Shows monthly price in BDT (৳) with `/মাস` suffix
+   - Highlights the dealer's current plan with a "Current" ribbon
+   - Marks the most popular plan ("Most Popular") and the highest tier ("Best Value") via `sort_order`
+   - Feature checklist per plan: max users, SMS, Email, Daily Summary, plus any plan-level features
+   - Button states:
+     - Current plan → disabled "Current Plan"
+     - Other plans → "Select [Plan]" → opens an upgrade-request dialog (creates a record super admin sees in `SADealerPaymentsPage`); top tier shows "Contact Sales" with the support number `01674533303`
 
-### 2. Gate the daily-summary cron to genuinely active dealers
-Update `supabase/functions/daily-summary/index.ts` so it only sends to dealers that satisfy **all** of:
+3. **Payment Requests / History section**
+   - Lists this dealer's `subscription_payments` rows (date, amount, method, status, note)
 
-- `dealers.status = 'active'`
-- An active subscription row exists (`subscriptions.status = 'active'` AND `subscriptions.end_date >= today`)
-- `notification_settings.enable_daily_summary_sms` (or email) is true
-- `owner_phone` (or `owner_email`) is non-empty
+## Backend (new dealer-scoped endpoints)
 
-Implementation: replace the current `notification_settings`-only query with a join on `dealers` + `subscriptions`. Pending/suspended/expired dealers are silently skipped and logged.
+New router file `backend/src/routes/dealerSubscription.ts` mounted at `/api/dealer/subscription`, protected by `authenticate + requireRole('dealer_admin')` and scoped by `req.dealerId`:
 
-### Technical details
+- `GET /current` → dealer's active subscription joined with plan
+- `GET /plans` → all `is_active = true` plans (id, name, price_monthly, price_yearly, max_users, sms/email/daily_summary flags, sort_order)
+- `GET /payments` → `subscription_payments` for `req.dealerId`, newest first
+- `POST /upgrade-request` → inserts into existing `subscription_payments` (or new `subscription_upgrade_requests`) with `payment_status = 'pending'` and target plan id, so super admin can review in their existing payments page
 
-**Files**
-- New migration `supabase/migrations/<ts>_remove_shamin_and_gate_summary.sql`:
-  ```sql
-  DELETE FROM notification_settings WHERE dealer_id = '2b73d124-1b28-4f1e-8648-738aebc610cb';
-  DELETE FROM subscription_payments WHERE dealer_id = '2b73d124-1b28-4f1e-8648-738aebc610cb';
-  DELETE FROM subscriptions         WHERE dealer_id = '2b73d124-1b28-4f1e-8648-738aebc610cb';
-  DELETE FROM dealers               WHERE id        = '2b73d124-1b28-4f1e-8648-738aebc610cb';
-  ```
-  (Cascades will clean up profiles, products, sales, ledgers, audit logs, etc.)
+No DB migration needed if we reuse `subscription_payments` with a `requested_plan_id` column — if that column doesn't exist we'll add it via a new migration `015_subscription_upgrade_request.ts`.
 
-- Edit `supabase/functions/daily-summary/index.ts`:
-  - Replace step 1 query with one that joins `notification_settings` → `dealers` → `subscriptions`, filtering on `dealers.status = 'active'` and an active, non-expired subscription.
-  - Skip + log any dealer that fails the gate.
+## Frontend
 
-**No frontend changes** required.
+- New page `src/pages/subscription/SubscriptionPage.tsx`
+- New service `src/services/dealerSubscriptionService.ts` calling the four endpoints above via `vpsAuthedFetch`
+- New components:
+  - `CurrentPlanCard.tsx` (status badge + expiry)
+  - `PlanCard.tsx` (single plan card, used in the 4-up grid)
+  - `UpgradeRequestDialog.tsx` (billing cycle, note, submit)
+- Route added to `src/App.tsx`: `/subscription` inside the protected dealer layout
+- Sidebar entry added to `src/components/AppLayout.tsx` under Settings:
+  `{ path: "/subscription", label: "Subscription", icon: Crown, dealerAdminOnly: true, readonlyAllowed: true }`
+- Salesman role: hidden (financial info, dealer_admin only)
+- Demo dealer (`is_demo`): page visible read-only, upgrade button disabled with tooltip "Demo account"
 
-## Verification after deploy
+## Style
 
-1. Run a one-off DB check: `SELECT count(*) FROM dealers;` → should be 0.
-2. Manually invoke the `daily-summary` edge function — should report `processed: 0` and exit cleanly.
-3. Tomorrow night's cron run will produce no SMS until a real, active, paid dealer exists.
+- Matches existing dark theme + orange/amber accent
+- Currency via `formatCurrency` (৳, 2 decimals); month suffix `/মাস` (Bengali, matches reference)
+- Card layout: 1 col mobile, 2 col tablet, 4 col desktop
+- "Current" ribbon = orange pill; "Most Popular" = blue; "Best Value" = green (mirroring reference image)
+
+## Out of scope
+
+- Auto-charging / online payments (still manual review by super admin)
+- Plan creation/editing (already done via super admin Plans page)
