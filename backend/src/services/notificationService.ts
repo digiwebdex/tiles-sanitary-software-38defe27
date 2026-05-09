@@ -16,20 +16,51 @@
  */
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
+import { db } from '../db/connection';
 
-let cachedTransport: nodemailer.Transporter | null = null;
+let envTransport: nodemailer.Transporter | null = null;
+const dealerTransportCache = new Map<string, { transport: nodemailer.Transporter; from: string; updated_at: string }>();
 
-function getTransport(): nodemailer.Transporter | null {
+function getEnvTransport(): { transport: nodemailer.Transporter; from: string } | null {
   if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS) return null;
-  if (cachedTransport) return cachedTransport;
+  if (!envTransport) {
+    envTransport = nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT ?? 587,
+      secure: (env.SMTP_PORT ?? 587) === 465,
+      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+    });
+  }
+  return { transport: envTransport, from: env.SMTP_FROM || env.SMTP_USER! };
+}
 
-  cachedTransport = nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT ?? 587,
-    secure: (env.SMTP_PORT ?? 587) === 465,
-    auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-  });
-  return cachedTransport;
+async function getDealerTransport(dealerId: string): Promise<{ transport: nodemailer.Transporter; from: string } | null> {
+  try {
+    const row = await db('dealer_smtp_settings').where({ dealer_id: dealerId, enabled: true }).first();
+    if (!row) return null;
+    const cacheKey = dealerId;
+    const updatedAtKey = row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at);
+    const cached = dealerTransportCache.get(cacheKey);
+    if (cached && cached.updated_at === updatedAtKey) {
+      return { transport: cached.transport, from: cached.from };
+    }
+    const transport = nodemailer.createTransport({
+      host: row.host,
+      port: row.port ?? 587,
+      secure: !!row.secure,
+      auth: { user: row.username, pass: row.password },
+    });
+    const from = row.from_name ? `"${row.from_name}" <${row.from_email}>` : row.from_email;
+    dealerTransportCache.set(cacheKey, { transport, from, updated_at: updatedAtKey });
+    return { transport, from };
+  } catch (err) {
+    console.warn('[notify] dealer SMTP lookup failed:', (err as Error).message);
+    return null;
+  }
+}
+
+export function invalidateDealerSmtpCache(dealerId: string) {
+  dealerTransportCache.delete(dealerId);
 }
 
 export async function sendEmail(opts: {
@@ -37,15 +68,17 @@ export async function sendEmail(opts: {
   subject: string;
   text: string;
   html?: string;
+  dealerId?: string;
 }): Promise<boolean> {
-  const transport = getTransport();
-  if (!transport) {
+  let cfg = opts.dealerId ? await getDealerTransport(opts.dealerId) : null;
+  if (!cfg) cfg = getEnvTransport();
+  if (!cfg) {
     console.warn('[notify] SMTP not configured — skipping email to', opts.to);
     return false;
   }
   try {
-    await transport.sendMail({
-      from: env.SMTP_FROM || env.SMTP_USER,
+    await cfg.transport.sendMail({
+      from: cfg.from,
       to: opts.to,
       subject: opts.subject,
       text: opts.text,

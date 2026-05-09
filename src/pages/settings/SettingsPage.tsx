@@ -16,6 +16,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { ApprovalSettingsCard } from "@/components/approval/ApprovalSettingsCard";
 import { DemandPlanningSettingsCard } from "@/components/DemandPlanningSettingsCard";
 import WhatsAppSettingsCard from "@/components/whatsapp/WhatsAppSettingsCard";
+import { SmtpSettingsCard } from "@/components/settings/SmtpSettingsCard";
 
 const SettingsPage = () => {
   const { isDealerAdmin } = usePermissions();
@@ -279,6 +280,9 @@ const SettingsPage = () => {
 
           {/* WhatsApp Automation */}
           <WhatsAppSettingsCard />
+
+          {/* SMTP Email Configuration */}
+          <SmtpSettingsCard />
         </>
       )}
     </div>

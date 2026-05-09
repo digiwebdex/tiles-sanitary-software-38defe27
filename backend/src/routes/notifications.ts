@@ -365,7 +365,7 @@ router.post(
           subject = r.subject;
           body = r.body;
         }
-        success = await sendEmail({ to: recipient, subject, text: body });
+        success = await sendEmail({ to: recipient, subject, text: body, dealerId });
         if (!success) errorMessage = 'Email dispatch failed';
       }
     } catch (err: any) {
