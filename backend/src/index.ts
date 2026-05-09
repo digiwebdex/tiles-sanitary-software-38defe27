@@ -55,6 +55,7 @@ import quotationsRoutes from './routes/quotations';
 import whatsappRoutes from './routes/whatsapp';
 import demandPlanningRoutes from './routes/demandPlanning';
 import backordersRoutes from './routes/backorders';
+import dataExportRoutes from './routes/dataExport';
 import path from 'path';
 
 const app = express();
@@ -190,6 +191,7 @@ app.use('/api/quotations', quotationsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/demand-planning', demandPlanningRoutes);
 app.use('/api/backorders', backordersRoutes);
+app.use('/api/data-export', dataExportRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
