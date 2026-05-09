@@ -55,6 +55,7 @@ import quotationsRoutes from './routes/quotations';
 import whatsappRoutes from './routes/whatsapp';
 import demandPlanningRoutes from './routes/demandPlanning';
 import backordersRoutes from './routes/backorders';
+import dataExportRoutes from './routes/dataExport';
 import path from 'path';
 
 const app = express();
