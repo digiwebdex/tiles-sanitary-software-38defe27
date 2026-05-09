@@ -235,7 +235,24 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Approval Workflow */}
+          {/* Data Backup & Restore */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Data Backup & Restore
+              </CardTitle>
+              <CardDescription>
+                Export your dealer data as CSV files for safekeeping or migration. Restore later via the bulk import tools.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={() => navigate("/settings/data-backup")}>
+                Open Backup & Restore <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
           <ApprovalSettingsCard />
 
           {/* Demand Planning Thresholds */}
