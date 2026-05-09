@@ -13,6 +13,7 @@ import { useDealerId } from "@/hooks/useDealerId";
 import { PendingApprovalsBadge } from "@/components/approval/PendingApprovalsBadge";
 import SAImpersonationBanner from "@/components/SAImpersonationBanner";
 import { DemoBanner } from "@/components/DemoBanner";
+import { AppHeader } from "@/components/AppHeader";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCurrentSubscription } from "@/services/dealerSubscriptionService";
 
@@ -174,6 +175,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           })}
         </nav>
 
+        <AppHeader />
         <SAImpersonationBanner />
         <DemoBanner />
         <main className="flex-1 overflow-auto">{children}</main>

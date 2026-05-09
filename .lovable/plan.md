@@ -1,86 +1,138 @@
-# Role Management System
+# ERP Modernization Plan — Safe, Phased, Non-Breaking
 
-## Goal
+## Guiding rules (locked in)
 
-Add a dealer-facing **Role Management** page modelled on the reference screenshot:
-- Header cards for each role with live counts and description.
-- Tabs: **Team Members** (searchable list with Status / Joined / Actions) and **Permission Matrix** (read-only grid).
-- Dealer admin can invite, edit, deactivate, and reassign team members.
+- No POS work of any kind.
+- No DB structure changes unless absolutely required (only additive: new tables/columns, never rename or drop).
+- All existing modules, routes, forms, reports, ledgers, sales/purchase/delivery flows stay exactly as today.
+- Automation level = **Suggest only**. The system surfaces alerts, draft suggestions, and reminders — the dealer always clicks to act.
+- Reuse what already exists: low-stock service, approval workflow, audit logs, notification service (SMS/Email), daily summary cron, automated backups, credit control, RBAC.
+- Every new screen ships with loading / empty / error / success states.
 
-## Important constraint
+---
 
-The existing system has only three database roles baked into the `app_role` enum:
-`super_admin`, `dealer_admin`, `salesman`. All RLS policies, backend middleware, and `usePermissions` rely on these. Inventing brand-new DB roles would touch every route.
+## Phase 1 — Interactivity Layer (quick wins, ~1 short build)
 
-To stay safe, we add **two new roles to the enum** that map cleanly to the dealer's day-to-day team, instead of the 5 generic roles in the screenshot (which are travel-agency specific):
+Goal: make the existing ERP feel modern and fast without touching business logic.
 
-| Role key (DB)      | Display label   | Description                                                        |
-|--------------------|-----------------|--------------------------------------------------------------------|
-| `dealer_admin`     | Owner           | Full access. Manages team, subscription, and all modules.          |
-| `manager` *(new)*  | Manager         | All operational modules (sales, purchase, inventory, reports). No team / billing. |
-| `accountant` *(new)* | Accountant    | Ledgers, collections, expenses, financial reports. Read-only on inventory. |
-| `salesman`         | Sales Agent     | Insert-only on sales / quotations / customers (existing behaviour). |
+1. **Global Command Palette (Ctrl/Cmd+K)**
+   - Floating search opened from header button + keyboard.
+   - Searches: customers, suppliers, products (SKU/name), invoices, challans, purchases.
+   - Quick-action commands: "New Sale", "New Purchase", "Record Payment", "New Customer", "New Product", "Open Reports", "Open Approvals".
+   - Role-aware: salesman only sees insert actions allowed for them; financial jumps hidden.
 
-Five role categories total (matching the screenshot's visual density), but mapped to permissions we can actually enforce today.
+2. **Notifications Bell (header)**
+   - Live dropdown listing: new approval requests pending, low-stock items, overdue customers, expiring subscription, failed SMS/Email.
+   - Unread badge count.
+   - Each item links to the existing page (no new module).
+   - Polled every 60s (no realtime infra change required).
 
-## Scope
+3. **Header Quick-Actions bar**
+   - Persistent buttons for the 4 most-used actions (New Sale, New Purchase, Record Payment, New Customer) with role checks.
 
-### Backend
-1. **Migration `016_role_management.ts`**
-   - `ALTER TYPE app_role ADD VALUE 'manager'; ADD VALUE 'accountant';`
-   - Add `invited_at`, `last_login_at` to `profiles` (nullable).
-2. **New routes `/api/team`** (dealer_admin only, tenant-scoped)
-   - `GET /api/team` — list profiles + their primary role + status + joined date + counts per role.
-   - `POST /api/team` — invite member (creates auth user via existing `create-dealer-user` flow + assigns role).
-   - `PUT /api/team/:userId` — change role / status / name.
-   - `DELETE /api/team/:userId` — soft-deactivate (sets `status = 'inactive'`, never hard-deletes).
-3. **`requireRole` middleware** updated to recognise `manager` and `accountant` where appropriate (e.g. allow `manager` on most write routes, `accountant` on ledger reads).
+4. **Sidebar polish**
+   - Group items: Sales / Inventory / Purchases / Finance / Reports / Settings.
+   - Highlight active route, keep current group expanded, collapsible to icon-rail.
+   - Mobile: off-canvas drawer (already supported by shadcn sidebar).
 
-### Frontend
-1. **`src/pages/settings/RoleManagementPage.tsx`** at route `/settings/roles`
-   - Top header with role-count cards (one per role).
-   - `Tabs`: **Team Members** and **Permission Matrix**.
-   - Team Members table: name, email, role badge, status badge, joined, actions (view / edit).
-   - Search box + "All Roles" filter dropdown.
-   - "Invite Member" button → dialog with name, email, role, temp password.
-2. **`src/components/team/InviteMemberDialog.tsx`** + **`EditMemberDialog.tsx`**
-3. **`src/components/team/PermissionMatrix.tsx`** — static read-only grid built from a single `ROLE_PERMISSIONS` constant so it can never drift from `usePermissions`.
-4. **`src/services/teamService.ts`** — thin VPS API wrapper.
-5. **`usePermissions` extension** — recognise `manager` and `accountant`; map them to existing capability flags. Salesman behaviour unchanged.
-6. **Settings page** — add a "Role Management" card linking to `/settings/roles`.
-7. **Sidebar** — add "Roles" link in the dealer-admin navigation group.
+5. **Global UI states pass**
+   - Add reusable `<EmptyState>`, `<LoadingState>`, `<ErrorState>` components and apply to the top 10 list pages (Sales, Purchases, Customers, Suppliers, Products, Ledger, Collections, Deliveries, Approvals, Reports).
+   - Standardize success toasts via existing `sonner`.
 
-### Out of scope
-- No granular per-permission toggles (the matrix is read-only). A future v2 can add a `dealer_role_overrides` table.
-- Existing `super_admin` flow is untouched.
-- Portal users are not part of this page (separate system).
+## Phase 2 — Smart Dashboard (~1 build)
 
-## Files
+Goal: replace the current near-empty Index with an actionable cockpit. Read-only — no write logic.
 
-```text
-backend/src/db/migrations/016_role_management.ts            (new)
-backend/src/routes/team.ts                                   (new)
-backend/src/index.ts                                         (register route)
-backend/src/middleware/roles.ts                              (recognise new roles)
-src/pages/settings/RoleManagementPage.tsx                    (new)
-src/components/team/InviteMemberDialog.tsx                   (new)
-src/components/team/EditMemberDialog.tsx                     (new)
-src/components/team/PermissionMatrix.tsx                     (new)
-src/services/teamService.ts                                  (new)
-src/hooks/usePermissions.ts                                  (add manager/accountant)
-src/pages/settings/SettingsPage.tsx                          (add card)
-src/components/AppLayout.tsx                                 (sidebar link)
-src/App.tsx                                                  (route)
-```
+KPI cards (today + this month toggles), all sourced from existing `/api/dashboard`, `/api/reports/*`, `/api/collections`, `/api/ledger`:
 
-## Deployment
+- Sales (count + amount), Purchases, Collections, Expenses
+- Receivable (total + overdue), Payable
+- Gross Profit (already exposed in reports)
+- Stock value (FIFO valuation already exists)
 
-Standard one-liner runs the new migration (`016_role_management.ts`) and rebuilds the frontend automatically — no extra steps.
+Action panels (each = list + "go to" link, no inline edits in Phase 2):
 
-## Open questions
+- **Low-stock items** (uses existing 2× reorder-buffer logic) with "Suggest reorder qty" column — a *suggestion only*, button just opens the existing Purchase form prefilled.
+- **Overdue customers** (uses existing aging buckets) with "Send reminder" button → opens existing notification dispatch dialog.
+- **Pending approvals** for the current user's role.
+- **Today's activity feed** (last 10 audit events relevant to dealer_admin).
 
-1. Should **Manager** be allowed to delete records, or only edit? (default: edit only, no delete)
-2. Should **Accountant** see cost prices? (default: yes — they need it for margin reports)
-3. Do you want email invitations to new members, or just create the account and share the temp password manually? (default: temp password, matches current `create-dealer-user` flow)
+Layout: responsive grid, dark theme, orange/amber accents — matches existing tokens. No drag/drop in Phase 2 (kept simple).
 
-Reply "go" to implement with the defaults above, or tell me what to change.
+## Phase 3 — Suggestion & Reminder Engine (~1 build)
+
+All suggest-only, all opt-in via Settings → Automation.
+
+1. **Auto reorder suggestions page**
+   - Daily computed list: products at/under reorder point. Shows last purchase supplier, avg daily sales (last 30d), suggested order qty.
+   - "Create draft purchase" button uses existing `CreatePurchaseDraftDialog` — dealer reviews/edits/saves as today.
+
+2. **Payment due reminders queue**
+   - Daily scan of receivables: groups customers with dues > X days (configurable).
+   - Bulk-select → "Send SMS" or "Send Email" via existing notification service (Bengali SMS template, English email).
+   - Logs every send to `notifications` table (already exists).
+
+3. **Overdue alerts**
+   - Surface in notification bell + dashboard panel; threshold reuses existing customer credit settings.
+
+4. **Daily business summary**
+   - Already exists via pg_cron; add a Settings toggle UI (per dealer) and a "Send me a test summary now" button.
+
+5. **Scheduled backup/export UI**
+   - Existing rclone backup runs on VPS. Add a **Data Export** screen (already partially built) listing daily exports + on-demand "Export now" (Sales/Purchases/Customers/Suppliers/Products/Ledger as CSV/Excel via existing SheetJS util).
+
+## Phase 4 — Approval & Audit polish (~½ build)
+
+All using existing `approval_requests` + `audit_logs` tables — no schema change.
+
+1. **Unified Approvals inbox** (already exists at `/approvals`) — add filter chips (type, requester, date), bulk approve for low-risk types only (note: high-risk types `credit_override`, `sale_cancel`, `stock_adjustment` keep mandatory note as enforced by `decide_approval_request`).
+2. **Approval triggers config UI** — per-dealer toggles for: discount > X%, credit-limit change, purchase > ৳Y, return value > ৳Z, payment write-off. Stored in existing approval settings.
+3. **Audit Log viewer** — filterable table over `audit_logs`: action type, table, user, date range. Read-only, dealer_admin only. Export to Excel.
+
+---
+
+## RBAC enforcement (every phase)
+
+- Salesman: cannot see KPI amounts, profit, payable, audit log, approvals inbox, automation settings.
+- Bell only shows items the role is allowed to act on.
+- Command-palette commands filter by `usePermissions`.
+- All new backend endpoints reuse existing `requireDealer` + `requireRole`.
+
+## What we will NOT touch
+
+- `sales`, `purchases`, `stock`, `product_batches`, `customer_ledger`, `supplier_ledger`, `deliveries`, `challans`, `sale_items`, `purchase_items` tables.
+- Existing form behaviors, invoice numbering, FIFO logic, batch allocation RPCs.
+- Subscription/portal/super-admin flows.
+
+## Technical details (for reviewer)
+
+- New routes only: `/dashboard` (replaces Index content), `/automation/reorder-suggestions`, `/automation/payment-reminders`, `/audit-logs`. All other routes unchanged.
+- New components only — no modifications to existing service files except adding read-only helpers if needed.
+- New backend endpoints (read-only or wrappers around existing logic): `GET /api/dashboard/kpis`, `GET /api/notifications/inbox`, `GET /api/automation/reorder-suggestions`, `GET /api/automation/payment-reminders`, `GET /api/audit-logs`. All reuse existing services.
+- No new DB tables required for Phases 1–4. If Phase 3 needs a `dealer_automation_settings` row, it will be a single additive table with sensible defaults.
+
+---
+
+## Testing checklist (run after each phase)
+
+**Sales:** create direct invoice, create with challan-mode, edit unpaid sale, cancel paid sale (blocked), partial payment, full payment, customer ledger updates, audit log entry created, notification settings honored.
+
+**Purchase:** create with landed cost, edit, cancel, supplier ledger entry, batch + stock + avg cost updated atomically, backorder allocation runs, barcode print works.
+
+**Inventory:** product CRUD, stock adjustment requires approval if enabled, batch tracking intact, low-stock alert appears, FIFO valuation matches, display-stock move works.
+
+**Customer / Supplier:** CRUD, opening balance trigger fires, credit limit enforced, follow-up status updates, opening balance ledger entry created.
+
+**Payment / Ledger:** record collection, base36 receipt generated, customer + cash ledger updated, due aging buckets recalc, expense entry creates expense + cash ledger.
+
+**Delivery:** partial delivery, full delivery, stock reservation consumed, sale delivery status syncs, commission promotion fires.
+
+**Reports:** all 13 reports load, salesman blocked from financial reports, Excel export works, date filters honor UTC+6.
+
+**Approvals:** request created with correct fingerprint, approve/reject with note enforcement, consume on action, stale on edit, expire after TTL, audit log entry per transition.
+
+**New surface:** Cmd+K opens & searches, bell shows unread + items, dashboard KPIs match reports, low-stock list matches inventory page, reorder draft prefills correctly, payment reminder sends via SMS/Email and logs, audit viewer filters correctly, all empty/loading/error states render.
+
+**RBAC:** log in as salesman → no KPIs, no profit, no approvals inbox, no automation, no audit; log in as dealer_admin → full access; log in as super_admin → bypasses normal dealer scope.
+
+**Mobile:** sidebar drawer opens, dashboard cards stack, command palette usable, no horizontal scroll on lists.
