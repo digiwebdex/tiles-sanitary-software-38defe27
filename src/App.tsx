@@ -75,6 +75,7 @@ import SAUserGuidePage from "./pages/super-admin/SAUserGuidePage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import PricingTiersPage from "./pages/settings/PricingTiersPage";
 import DataBackupPage from "./pages/settings/DataBackupPage";
+import RoleManagementPage from "./pages/settings/RoleManagementPage";
 import PortalUsersPage from "./pages/admin/PortalUsersPage";
 import PortalLayout from "./pages/portal/PortalLayout";
 import PortalLoginPage from "./pages/portal/PortalLoginPage";
@@ -172,6 +173,7 @@ const App = () => (
             <Route path="/subscription" element={<ProtectedRoute allowReadonly><AppLayout><SubscriptionPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/pricing-tiers" element={<ProtectedRoute><AppLayout><PricingTiersPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/data-backup" element={<ProtectedRoute><AppLayout><DataBackupPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/settings/roles" element={<ProtectedRoute><AppLayout><RoleManagementPage /></AppLayout></ProtectedRoute>} />
 
             {/* Full-access routes */}
             <Route path="/products" element={<ProtectedRoute><AppLayout><ProductsPage /></AppLayout></ProtectedRoute>} />

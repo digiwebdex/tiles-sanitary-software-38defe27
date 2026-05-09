@@ -24,38 +24,48 @@ export interface Permissions {
   isDealerAdmin: boolean;
   isSalesman: boolean;
   isSuperAdmin: boolean;
+  isManager: boolean;
+  isAccountant: boolean;
   isDemo: boolean;
 }
 
 export function usePermissions(): Permissions {
   const { roles, isSuperAdmin, isDealerAdmin, isDemo } = useAuth();
   const isSalesman = roles.some((r) => r.role === "salesman");
+  const isManager = roles.some((r) => r.role === "manager");
+  const isAccountant = roles.some((r) => r.role === "accountant");
 
-  // Dealer admin and super admin get full access
+  // Owner / super admin → full access
   const isPrivileged = isDealerAdmin || isSuperAdmin;
 
-  // Demo blocks all mutations regardless of role (super_admin never carries
-  // the demo flag — the backend strips it for super_admin tokens).
+  // Demo blocks all mutations regardless of role
   const canMutate = !isDemo;
 
+  // Manager: full operational write but no team/billing
+  // Accountant: read finances, edit collections / expenses; no inventory writes
+  const canSeeFinance = isPrivileged || isAccountant || isManager;
+  const canOperate = isPrivileged || isManager;
+
   return {
-    canViewCostPrice: isPrivileged,
-    canViewProfit: isPrivileged,
-    canViewMargin: isPrivileged,
-    canEditPrices: isPrivileged && canMutate,
-    canAdjustStock: isPrivileged && canMutate,
+    canViewCostPrice: canSeeFinance,
+    canViewProfit: canSeeFinance,
+    canViewMargin: canSeeFinance,
+    canEditPrices: canOperate && canMutate,
+    canAdjustStock: canOperate && canMutate,
     canOverrideCredit: isPrivileged && canMutate,
-    canRecordCollections: isPrivileged && canMutate,
+    canRecordCollections: (isPrivileged || isAccountant) && canMutate,
     canDeleteRecords: isPrivileged && canMutate,
-    canExportReports: isPrivileged,
+    canExportReports: canSeeFinance,
     canManageUsers: isPrivileged && canMutate,
-    canViewSupplierLedger: isPrivileged,
-    canViewExpenseLedger: isPrivileged,
-    canViewFinancialDashboard: isPrivileged,
+    canViewSupplierLedger: canSeeFinance,
+    canViewExpenseLedger: canSeeFinance,
+    canViewFinancialDashboard: canSeeFinance,
     canMutate,
     isDealerAdmin,
     isSalesman,
     isSuperAdmin,
+    isManager,
+    isAccountant,
     isDemo,
   };
 }

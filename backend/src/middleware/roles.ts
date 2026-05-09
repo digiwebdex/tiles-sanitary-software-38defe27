@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-type AppRole = 'super_admin' | 'dealer_admin' | 'salesman';
+type AppRole = 'super_admin' | 'dealer_admin' | 'manager' | 'accountant' | 'salesman';
 
 /**
  * Role guard: restricts access to users with at least one of the specified roles.

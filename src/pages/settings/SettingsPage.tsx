@@ -253,6 +253,25 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
+          {/* Role Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" />
+                Role Management
+              </CardTitle>
+              <CardDescription>
+                Invite team members, assign roles (Owner, Manager, Accountant, Sales Agent), and view the permission matrix.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={() => navigate("/settings/roles")}>
+                Manage Roles & Team <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Approval Workflow */}
           <ApprovalSettingsCard />
 
           {/* Demand Planning Thresholds */}
