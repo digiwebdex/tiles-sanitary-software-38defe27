@@ -56,6 +56,7 @@ import whatsappRoutes from './routes/whatsapp';
 import demandPlanningRoutes from './routes/demandPlanning';
 import backordersRoutes from './routes/backorders';
 import dataExportRoutes from './routes/dataExport';
+import teamRoutes from './routes/team';
 import path from 'path';
 
 const app = express();
