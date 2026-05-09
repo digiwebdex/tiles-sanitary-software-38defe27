@@ -427,9 +427,9 @@ export const authService = {
     password: string;
     name: string;
     dealerId?: string;
-    role: 'dealer_admin' | 'salesman' | 'super_admin';
+    role: 'dealer_admin' | 'salesman' | 'super_admin' | 'manager' | 'accountant';
   }) {
-    if ((data.role === 'dealer_admin' || data.role === 'salesman') && !data.dealerId) {
+    if ((data.role !== 'super_admin') && !data.dealerId) {
       throw new Error(`${data.role} users must be linked to a dealer`);
     }
 
