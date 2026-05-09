@@ -171,6 +171,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/subscription" element={<ProtectedRoute allowReadonly><AppLayout><SubscriptionPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/pricing-tiers" element={<ProtectedRoute><AppLayout><PricingTiersPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/settings/data-backup" element={<ProtectedRoute><AppLayout><DataBackupPage /></AppLayout></ProtectedRoute>} />
 
             {/* Full-access routes */}
             <Route path="/products" element={<ProtectedRoute><AppLayout><ProductsPage /></AppLayout></ProtectedRoute>} />
