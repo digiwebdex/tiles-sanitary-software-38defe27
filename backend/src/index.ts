@@ -193,6 +193,7 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/demand-planning', demandPlanningRoutes);
 app.use('/api/backorders', backordersRoutes);
 app.use('/api/data-export', dataExportRoutes);
+app.use('/api/team', teamRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
