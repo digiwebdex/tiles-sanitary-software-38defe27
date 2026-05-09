@@ -271,6 +271,9 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
+          {/* Approval Workflow */}
+          <ApprovalSettingsCard />
+
           {/* Demand Planning Thresholds */}
           <DemandPlanningSettingsCard />
 
