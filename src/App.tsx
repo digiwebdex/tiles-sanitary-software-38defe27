@@ -75,6 +75,7 @@ import SAUserGuidePage from "./pages/super-admin/SAUserGuidePage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import PricingTiersPage from "./pages/settings/PricingTiersPage";
 import DataBackupPage from "./pages/settings/DataBackupPage";
+import RoleManagementPage from "./pages/settings/RoleManagementPage";
 import PortalUsersPage from "./pages/admin/PortalUsersPage";
 import PortalLayout from "./pages/portal/PortalLayout";
 import PortalLoginPage from "./pages/portal/PortalLoginPage";
