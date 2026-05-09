@@ -16,7 +16,7 @@ interface Profile {
 }
 
 interface UserRole {
-  role: "super_admin" | "dealer_admin" | "salesman";
+  role: "super_admin" | "dealer_admin" | "manager" | "accountant" | "salesman";
 }
 
 interface Subscription {
