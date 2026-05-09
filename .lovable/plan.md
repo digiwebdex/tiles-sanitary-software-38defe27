@@ -1,61 +1,86 @@
-# Dealer Subscription Page
+# Role Management System
 
-Add a dealer-facing **Subscription** page (like the first reference image) so a dealer admin can see the software plan they're on, what other plans are available, and request upgrades / view past payments.
+## Goal
 
-## What the page shows
+Add a dealer-facing **Role Management** page modelled on the reference screenshot:
+- Header cards for each role with live counts and description.
+- Tabs: **Team Members** (searchable list with Status / Joined / Actions) and **Permission Matrix** (read-only grid).
+- Dealer admin can invite, edit, deactivate, and reassign team members.
 
-1. **Current Plan card**
-   - Plan name (Basic/Pro/Business/Custom)
-   - Status badge: Active / Expiring Soon / Grace / Expired / Suspended
-   - Expiry date + days remaining
-   - Billing cycle (Monthly / Yearly)
+## Important constraint
 
-2. **Plan comparison grid** (4 cards, like the reference)
-   - Pulls active plans from `plans` table
-   - Shows monthly price in BDT (৳) with `/মাস` suffix
-   - Highlights the dealer's current plan with a "Current" ribbon
-   - Marks the most popular plan ("Most Popular") and the highest tier ("Best Value") via `sort_order`
-   - Feature checklist per plan: max users, SMS, Email, Daily Summary, plus any plan-level features
-   - Button states:
-     - Current plan → disabled "Current Plan"
-     - Other plans → "Select [Plan]" → opens an upgrade-request dialog (creates a record super admin sees in `SADealerPaymentsPage`); top tier shows "Contact Sales" with the support number `01674533303`
+The existing system has only three database roles baked into the `app_role` enum:
+`super_admin`, `dealer_admin`, `salesman`. All RLS policies, backend middleware, and `usePermissions` rely on these. Inventing brand-new DB roles would touch every route.
 
-3. **Payment Requests / History section**
-   - Lists this dealer's `subscription_payments` rows (date, amount, method, status, note)
+To stay safe, we add **two new roles to the enum** that map cleanly to the dealer's day-to-day team, instead of the 5 generic roles in the screenshot (which are travel-agency specific):
 
-## Backend (new dealer-scoped endpoints)
+| Role key (DB)      | Display label   | Description                                                        |
+|--------------------|-----------------|--------------------------------------------------------------------|
+| `dealer_admin`     | Owner           | Full access. Manages team, subscription, and all modules.          |
+| `manager` *(new)*  | Manager         | All operational modules (sales, purchase, inventory, reports). No team / billing. |
+| `accountant` *(new)* | Accountant    | Ledgers, collections, expenses, financial reports. Read-only on inventory. |
+| `salesman`         | Sales Agent     | Insert-only on sales / quotations / customers (existing behaviour). |
 
-New router file `backend/src/routes/dealerSubscription.ts` mounted at `/api/dealer/subscription`, protected by `authenticate + requireRole('dealer_admin')` and scoped by `req.dealerId`:
+Five role categories total (matching the screenshot's visual density), but mapped to permissions we can actually enforce today.
 
-- `GET /current` → dealer's active subscription joined with plan
-- `GET /plans` → all `is_active = true` plans (id, name, price_monthly, price_yearly, max_users, sms/email/daily_summary flags, sort_order)
-- `GET /payments` → `subscription_payments` for `req.dealerId`, newest first
-- `POST /upgrade-request` → inserts into existing `subscription_payments` (or new `subscription_upgrade_requests`) with `payment_status = 'pending'` and target plan id, so super admin can review in their existing payments page
+## Scope
 
-No DB migration needed if we reuse `subscription_payments` with a `requested_plan_id` column — if that column doesn't exist we'll add it via a new migration `015_subscription_upgrade_request.ts`.
+### Backend
+1. **Migration `016_role_management.ts`**
+   - `ALTER TYPE app_role ADD VALUE 'manager'; ADD VALUE 'accountant';`
+   - Add `invited_at`, `last_login_at` to `profiles` (nullable).
+2. **New routes `/api/team`** (dealer_admin only, tenant-scoped)
+   - `GET /api/team` — list profiles + their primary role + status + joined date + counts per role.
+   - `POST /api/team` — invite member (creates auth user via existing `create-dealer-user` flow + assigns role).
+   - `PUT /api/team/:userId` — change role / status / name.
+   - `DELETE /api/team/:userId` — soft-deactivate (sets `status = 'inactive'`, never hard-deletes).
+3. **`requireRole` middleware** updated to recognise `manager` and `accountant` where appropriate (e.g. allow `manager` on most write routes, `accountant` on ledger reads).
 
-## Frontend
+### Frontend
+1. **`src/pages/settings/RoleManagementPage.tsx`** at route `/settings/roles`
+   - Top header with role-count cards (one per role).
+   - `Tabs`: **Team Members** and **Permission Matrix**.
+   - Team Members table: name, email, role badge, status badge, joined, actions (view / edit).
+   - Search box + "All Roles" filter dropdown.
+   - "Invite Member" button → dialog with name, email, role, temp password.
+2. **`src/components/team/InviteMemberDialog.tsx`** + **`EditMemberDialog.tsx`**
+3. **`src/components/team/PermissionMatrix.tsx`** — static read-only grid built from a single `ROLE_PERMISSIONS` constant so it can never drift from `usePermissions`.
+4. **`src/services/teamService.ts`** — thin VPS API wrapper.
+5. **`usePermissions` extension** — recognise `manager` and `accountant`; map them to existing capability flags. Salesman behaviour unchanged.
+6. **Settings page** — add a "Role Management" card linking to `/settings/roles`.
+7. **Sidebar** — add "Roles" link in the dealer-admin navigation group.
 
-- New page `src/pages/subscription/SubscriptionPage.tsx`
-- New service `src/services/dealerSubscriptionService.ts` calling the four endpoints above via `vpsAuthedFetch`
-- New components:
-  - `CurrentPlanCard.tsx` (status badge + expiry)
-  - `PlanCard.tsx` (single plan card, used in the 4-up grid)
-  - `UpgradeRequestDialog.tsx` (billing cycle, note, submit)
-- Route added to `src/App.tsx`: `/subscription` inside the protected dealer layout
-- Sidebar entry added to `src/components/AppLayout.tsx` under Settings:
-  `{ path: "/subscription", label: "Subscription", icon: Crown, dealerAdminOnly: true, readonlyAllowed: true }`
-- Salesman role: hidden (financial info, dealer_admin only)
-- Demo dealer (`is_demo`): page visible read-only, upgrade button disabled with tooltip "Demo account"
+### Out of scope
+- No granular per-permission toggles (the matrix is read-only). A future v2 can add a `dealer_role_overrides` table.
+- Existing `super_admin` flow is untouched.
+- Portal users are not part of this page (separate system).
 
-## Style
+## Files
 
-- Matches existing dark theme + orange/amber accent
-- Currency via `formatCurrency` (৳, 2 decimals); month suffix `/মাস` (Bengali, matches reference)
-- Card layout: 1 col mobile, 2 col tablet, 4 col desktop
-- "Current" ribbon = orange pill; "Most Popular" = blue; "Best Value" = green (mirroring reference image)
+```text
+backend/src/db/migrations/016_role_management.ts            (new)
+backend/src/routes/team.ts                                   (new)
+backend/src/index.ts                                         (register route)
+backend/src/middleware/roles.ts                              (recognise new roles)
+src/pages/settings/RoleManagementPage.tsx                    (new)
+src/components/team/InviteMemberDialog.tsx                   (new)
+src/components/team/EditMemberDialog.tsx                     (new)
+src/components/team/PermissionMatrix.tsx                     (new)
+src/services/teamService.ts                                  (new)
+src/hooks/usePermissions.ts                                  (add manager/accountant)
+src/pages/settings/SettingsPage.tsx                          (add card)
+src/components/AppLayout.tsx                                 (sidebar link)
+src/App.tsx                                                  (route)
+```
 
-## Out of scope
+## Deployment
 
-- Auto-charging / online payments (still manual review by super admin)
-- Plan creation/editing (already done via super admin Plans page)
+Standard one-liner runs the new migration (`016_role_management.ts`) and rebuilds the frontend automatically — no extra steps.
+
+## Open questions
+
+1. Should **Manager** be allowed to delete records, or only edit? (default: edit only, no delete)
+2. Should **Accountant** see cost prices? (default: yes — they need it for margin reports)
+3. Do you want email invitations to new members, or just create the account and share the temp password manually? (default: temp password, matches current `create-dealer-user` flow)
+
+Reply "go" to implement with the defaults above, or tell me what to change.
