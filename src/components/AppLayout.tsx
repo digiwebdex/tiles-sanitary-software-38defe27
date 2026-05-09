@@ -13,6 +13,8 @@ import { useDealerId } from "@/hooks/useDealerId";
 import { PendingApprovalsBadge } from "@/components/approval/PendingApprovalsBadge";
 import SAImpersonationBanner from "@/components/SAImpersonationBanner";
 import { DemoBanner } from "@/components/DemoBanner";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCurrentSubscription } from "@/services/dealerSubscriptionService";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, readonlyAllowed: true },
@@ -46,6 +48,12 @@ const navItems = [
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { profile, accessLevel, isSuperAdmin, isDealerAdmin, signOut } = useAuth();
+  const { data: currentSub } = useQuery({
+    queryKey: ["current-subscription-badge"],
+    queryFn: fetchCurrentSubscription,
+    enabled: !isSuperAdmin,
+    staleTime: 5 * 60 * 1000,
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const dealerIdForBadge = profile?.dealer_id ?? "";
@@ -114,6 +122,18 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
         <div className="mt-auto space-y-2 pt-4 border-t">
           <p className="text-xs text-muted-foreground truncate px-2">{profile?.name}</p>
+          <div className="flex flex-wrap gap-1 px-2">
+            {currentSub?.plan_name && (
+              <Badge className="bg-primary/15 text-primary border border-primary/30 text-[10px] px-2 py-0">
+                {currentSub.plan_name}
+              </Badge>
+            )}
+            {isDealerAdmin && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0 border-amber-500/40 text-amber-500">
+                Tenant Owner
+              </Badge>
+            )}
+          </div>
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={signOut}>
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </Button>
