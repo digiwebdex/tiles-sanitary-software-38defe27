@@ -388,15 +388,6 @@ const TrustedSecureSection = () => {
 /* ─── PRICING ─── */
 const PRICING_PLANS = [
   {
-    name: "Free Trial",
-    highlighted: false,
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    isTrial: true,
-    trialDays: 3,
-    features: ["1 user only", "Basic inventory", "Sales & purchase entry", "Customer ledger", "3 days access"],
-  },
-  {
     name: "Starter",
     highlighted: false,
     monthlyPrice: 999,
