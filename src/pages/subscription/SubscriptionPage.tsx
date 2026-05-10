@@ -339,6 +339,8 @@ const SubscriptionPage = () => {
         </CardContent>
       </Card>
 
+      <PaymentMethodsCard />
+
       <UpgradeRequestDialog
         plan={selectedPlan}
         onClose={() => setSelectedPlan(null)}
