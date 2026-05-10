@@ -99,11 +99,6 @@ const Navbar = ({ companyName }: { companyName: string }) => {
               Book a Demo <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
-          <Link to="/login">
-            <Button size="sm" className="bg-white text-gray-900 hover:bg-gray-100 font-semibold border-0">
-              Login
-            </Button>
-          </Link>
           <button className="md:hidden text-white" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
