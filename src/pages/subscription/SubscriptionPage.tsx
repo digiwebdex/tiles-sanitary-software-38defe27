@@ -18,6 +18,7 @@ import {
   type PlanOption,
 } from "@/services/dealerSubscriptionService";
 import UpgradeRequestDialog from "@/components/subscription/UpgradeRequestDialog";
+import { PaymentMethodsCard } from "@/components/subscription/PaymentMethodsCard";
 
 const SUPPORT_PHONE = "01674533303";
 
@@ -337,6 +338,8 @@ const SubscriptionPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <PaymentMethodsCard />
 
       <UpgradeRequestDialog
         plan={selectedPlan}
