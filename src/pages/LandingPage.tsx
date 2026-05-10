@@ -639,11 +639,6 @@ const CtaSection = ({ heroBtn }: { heroBtn: string; heroBtnLink: string }) => (
             {heroBtn || "Start Free Trial"}
           </Button>
         </Link>
-        <Link to="/login">
-          <Button size="lg" variant="outline" className="gap-2 px-10 h-14 text-base font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/5 bg-transparent">
-            Sign In <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
       </div>
     </div>
   </section>
