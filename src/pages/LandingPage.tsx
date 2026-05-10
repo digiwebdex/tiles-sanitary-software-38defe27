@@ -28,8 +28,6 @@ const DEFAULTS = {
     button_link: "/get-started",
     extra_json: {
       badge: "🚀 #1 Tiles & Sanitary ERP in Bangladesh",
-      secondary_button: "Sign In",
-      secondary_link: "/login",
     },
   },
   features: {
