@@ -28,8 +28,6 @@ const DEFAULTS = {
     button_link: "/get-started",
     extra_json: {
       badge: "🚀 #1 Tiles & Sanitary ERP in Bangladesh",
-      secondary_button: "Sign In",
-      secondary_link: "/login",
     },
   },
   features: {
@@ -99,11 +97,6 @@ const Navbar = ({ companyName }: { companyName: string }) => {
           <Link to="/get-started">
             <Button size="sm" className="hidden sm:inline-flex bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-orange-500/20 font-semibold gap-1.5">
               Book a Demo <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-          <Link to="/login">
-            <Button size="sm" className="bg-white text-gray-900 hover:bg-gray-100 font-semibold border-0">
-              Login
             </Button>
           </Link>
           <button className="md:hidden text-white" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -179,13 +172,6 @@ const HeroSection = ({ cms }: { cms: typeof DEFAULTS.hero & { extra_json: any } 
               {cms.button_text || "Start Free Trial"}
             </Button>
           </Link>
-          {ex.secondary_button && (
-            <Link to={ex.secondary_link || "/login"}>
-              <Button size="lg" variant="outline" className="gap-2 px-10 h-14 text-base font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/5 hover:border-white/30 bg-transparent">
-                {ex.secondary_button} <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          )}
         </div>
 
         {/* Stats */}
@@ -402,15 +388,6 @@ const TrustedSecureSection = () => {
 /* ─── PRICING ─── */
 const PRICING_PLANS = [
   {
-    name: "Free Trial",
-    highlighted: false,
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    isTrial: true,
-    trialDays: 3,
-    features: ["1 user only", "Basic inventory", "Sales & purchase entry", "Customer ledger", "3 days access"],
-  },
-  {
     name: "Starter",
     highlighted: false,
     monthlyPrice: 999,
@@ -488,7 +465,7 @@ const PricingSection = ({ cms }: { cms: typeof DEFAULTS.pricing & { extra_json: 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch max-w-5xl mx-auto">
           {PRICING_PLANS.map((plan, i) => {
             const isTrial = (plan as any).isTrial;
             const price = isTrial ? 0 : (yearly ? plan.yearlyPrice : plan.monthlyPrice);
@@ -660,11 +637,6 @@ const CtaSection = ({ heroBtn }: { heroBtn: string; heroBtnLink: string }) => (
           <Button size="lg" className="gap-2 px-10 h-14 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-xl shadow-orange-500/25 rounded-xl">
             <Zap className="h-4 w-4" />
             {heroBtn || "Start Free Trial"}
-          </Button>
-        </Link>
-        <Link to="/login">
-          <Button size="lg" variant="outline" className="gap-2 px-10 h-14 text-base font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/5 bg-transparent">
-            Sign In <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>
