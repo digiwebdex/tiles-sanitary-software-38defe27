@@ -84,10 +84,18 @@ const SubscriptionPage = () => {
 
   const sub = subQuery.data;
   const plans = useMemo(
-    () => (plansQuery.data ?? []).slice().sort((a, b) =>
-      (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
-      Number(a.price_monthly) - Number(b.price_monthly),
-    ),
+    () => (plansQuery.data ?? [])
+      .slice()
+      .filter((p) => {
+        const name = (p.name ?? "").toLowerCase().trim();
+        if (p.is_trial) return false;
+        if (name === "basic" || name === "free trial") return false;
+        return true;
+      })
+      .sort((a, b) =>
+        (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+        Number(a.price_monthly) - Number(b.price_monthly),
+      ),
     [plansQuery.data],
   );
 
