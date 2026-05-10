@@ -172,13 +172,6 @@ const HeroSection = ({ cms }: { cms: typeof DEFAULTS.hero & { extra_json: any } 
               {cms.button_text || "Start Free Trial"}
             </Button>
           </Link>
-          {ex.secondary_button && (
-            <Link to={ex.secondary_link || "/login"}>
-              <Button size="lg" variant="outline" className="gap-2 px-10 h-14 text-base font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/5 hover:border-white/30 bg-transparent">
-                {ex.secondary_button} <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          )}
         </div>
 
         {/* Stats */}
