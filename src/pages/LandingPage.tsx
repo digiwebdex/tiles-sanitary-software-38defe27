@@ -465,7 +465,7 @@ const PricingSection = ({ cms }: { cms: typeof DEFAULTS.pricing & { extra_json: 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch max-w-5xl mx-auto">
           {PRICING_PLANS.map((plan, i) => {
             const isTrial = (plan as any).isTrial;
             const price = isTrial ? 0 : (yearly ? plan.yearlyPrice : plan.monthlyPrice);
