@@ -11,6 +11,8 @@ export interface DealerInfo {
   default_wastage_pct: number;
   /** Phase 3U-30: surfaced from `/api/dealers/:id` so SaleForm can gate backorders without a separate Supabase round-trip. */
   allow_backorder: boolean;
+  /** Phase 1 dual-unit: when true, Purchase/Sale/Return forms split Qty into Box + Pc. */
+  dual_unit_enabled: boolean;
 }
 
 /**
