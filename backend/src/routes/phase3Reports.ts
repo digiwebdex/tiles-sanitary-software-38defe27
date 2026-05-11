@@ -166,4 +166,42 @@ router.get('/warehouse-stock', async (req, res) => {
   });
 });
 
+// ── Voucher: salary payment by id ──
+router.get('/voucher/salary/:id', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const row = await db('salary_payments as sp')
+    .leftJoin('employees as e', 'e.id', 'sp.employee_id')
+    .leftJoin('bank_accounts as ba', 'ba.id', 'sp.bank_account_id')
+    .leftJoin('dealers as d', 'd.id', 'sp.dealer_id')
+    .where('sp.id', req.params.id).andWhere('sp.dealer_id', dealerId)
+    .select(
+      'sp.*',
+      'e.name as employee_name', 'e.designation', 'e.employee_code', 'e.phone as employee_phone',
+      'ba.bank_name', 'ba.account_number',
+      'd.business_name as dealer_name', 'd.address as dealer_address', 'd.phone as dealer_phone',
+    ).first();
+  if (!row) { res.status(404).json({ error: 'Not found' }); return; }
+  res.json(row);
+});
+
+// ── Voucher: director transaction by id ──
+router.get('/voucher/director/:id', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const row = await db('director_transactions as dt')
+    .join('directors as dr', 'dr.id', 'dt.director_id')
+    .leftJoin('bank_accounts as ba', 'ba.id', 'dt.bank_account_id')
+    .leftJoin('dealers as d', 'd.id', 'dt.dealer_id')
+    .where('dt.id', req.params.id).andWhere('dt.dealer_id', dealerId)
+    .select(
+      'dt.*',
+      'dr.name as director_name', 'dr.role as director_role', 'dr.phone as director_phone', 'dr.share_pct',
+      'ba.bank_name', 'ba.account_number',
+      'd.business_name as dealer_name', 'd.address as dealer_address', 'd.phone as dealer_phone',
+    ).first();
+  if (!row) { res.status(404).json({ error: 'Not found' }); return; }
+  res.json(row);
+});
+
 export default router;
