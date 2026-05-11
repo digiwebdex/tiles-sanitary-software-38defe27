@@ -39,6 +39,7 @@ const navItems = [
   { path: "/hrm", label: "HRM (Employees)", icon: Users, dealerAdminOnly: true },
   { path: "/directors", label: "Directors", icon: Crown, dealerAdminOnly: true },
   { path: "/warehouses", label: "Warehouses", icon: Warehouse, dealerAdminOnly: true },
+  { path: "/reports/operations", label: "Operations Reports", icon: Scale, dealerAdminOnly: true },
   { path: "/approvals", label: "Approvals", icon: ShieldCheck },
   { path: "/campaigns", label: "Campaigns", icon: Gift },
   { path: "/referrals", label: "Referrals", icon: HandCoins },

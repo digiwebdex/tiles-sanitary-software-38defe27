@@ -23,7 +23,7 @@ export interface BalanceSheet {
     total: number;
   };
   liabilities: { accounts_payable: number; total: number };
-  equity: { owner_equity: number; total: number };
+  equity: { director_capital?: number; retained_earnings?: number; owner_equity: number; total: number };
 }
 
 export const financialService = {

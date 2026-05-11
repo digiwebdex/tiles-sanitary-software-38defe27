@@ -64,6 +64,7 @@ import financialsRoutes from './routes/financials';
 import employeesRoutes from './routes/employees';
 import directorsRoutes from './routes/directors';
 import warehousesRoutes from './routes/warehouses';
+import phase3ReportsRoutes from './routes/phase3Reports';
 import path from 'path';
 
 const app = express();
@@ -208,6 +209,7 @@ app.use('/api/financials', financialsRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/directors', directorsRoutes);
 app.use('/api/warehouses', warehousesRoutes);
+app.use('/api/reports', phase3ReportsRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(

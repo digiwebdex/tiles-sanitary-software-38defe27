@@ -174,9 +174,25 @@ router.get('/balance-sheet', async (req, res) => {
     payable = Math.max(0, num(apRow?.total));
   } catch { payable = 0; }
 
+  // Director Capital = sum(deposit) - sum(withdrawal) - sum(dividend)
+  let director_capital = 0;
+  try {
+    const dRows = await db('director_transactions')
+      .where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('entry_date', '<=', asOf); })
+      .select('type').sum({ total: 'amount' }).groupBy('type');
+    for (const r of dRows as any[]) {
+      const amt = num(r.total);
+      if (r.type === 'deposit') director_capital += amt;
+      else if (r.type === 'withdrawal' || r.type === 'dividend') director_capital -= amt;
+    }
+  } catch { director_capital = 0; }
+
   const total_assets = cash + bank_total + inventory + receivable;
   const total_liabilities = payable;
-  const equity = total_assets - total_liabilities;
+  const total_equity = total_assets - total_liabilities;
+  // Retained earnings = remaining equity after director capital
+  const retained_earnings = total_equity - director_capital;
 
   res.json({
     as_of: asOf,
@@ -193,8 +209,10 @@ router.get('/balance-sheet', async (req, res) => {
       total: total_liabilities,
     },
     equity: {
-      owner_equity: equity,
-      total: equity,
+      director_capital,
+      retained_earnings,
+      owner_equity: total_equity,
+      total: total_equity,
     },
   });
 });
