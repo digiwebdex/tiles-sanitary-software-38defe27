@@ -205,6 +205,9 @@ app.use('/api/team', teamRoutes);
 app.use('/api/bank-accounts', bankAccountsRoutes);
 app.use('/api/cashbook', cashbookRoutes);
 app.use('/api/financials', financialsRoutes);
+app.use('/api/employees', employeesRoutes);
+app.use('/api/directors', directorsRoutes);
+app.use('/api/warehouses', warehousesRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
