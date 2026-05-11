@@ -1034,6 +1034,16 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
                                 className="h-8 text-sm text-center"
                                 disabled={priceLocked}
                                 {...f}
+                                onBlur={(e) => {
+                                  // Tile auto-rounding: tiles are sold in whole boxes only.
+                                  if (selectedProduct?.unit_type === "box_sft") {
+                                    const v = Number(e.target.value);
+                                    if (Number.isFinite(v) && v > 0 && v !== Math.ceil(v)) {
+                                      f.onChange(Math.ceil(v));
+                                    }
+                                  }
+                                  f.onBlur();
+                                }}
                               />
                             </FormControl>
                             {itemSft !== null && (

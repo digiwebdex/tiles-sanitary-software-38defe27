@@ -61,6 +61,9 @@ import teamRoutes from './routes/team';
 import bankAccountsRoutes from './routes/bankAccounts';
 import cashbookRoutes from './routes/cashbook';
 import financialsRoutes from './routes/financials';
+import employeesRoutes from './routes/employees';
+import directorsRoutes from './routes/directors';
+import warehousesRoutes from './routes/warehouses';
 import path from 'path';
 
 const app = express();
@@ -202,6 +205,9 @@ app.use('/api/team', teamRoutes);
 app.use('/api/bank-accounts', bankAccountsRoutes);
 app.use('/api/cashbook', cashbookRoutes);
 app.use('/api/financials', financialsRoutes);
+app.use('/api/employees', employeesRoutes);
+app.use('/api/directors', directorsRoutes);
+app.use('/api/warehouses', warehousesRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
