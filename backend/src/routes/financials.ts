@@ -94,8 +94,8 @@ router.get('/p-and-l', async (req, res) => {
     .where({ dealer_id: dealerId })
     .modify(qb => { if (from) qb.where('expense_date', '>=', from); if (to) qb.where('expense_date', '<=', to); })
     .select('category').sum({ total: 'amount' }).groupBy('category');
-  const expenses_by_category = expenseRows.map(r => ({ category: r.category || 'Uncategorized', amount: num(r.total) }));
-  const total_expenses = expenses_by_category.reduce((s, r) => s + r.amount, 0);
+  const expenses_by_category = expenseRows.map((r: any) => ({ category: r.category || 'Uncategorized', amount: num(r.total) }));
+  const total_expenses = expenses_by_category.reduce((s: number, r: { amount: number }) => s + r.amount, 0);
 
   const net_profit = gross_profit - total_expenses;
 
