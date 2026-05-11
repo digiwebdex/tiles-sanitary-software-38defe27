@@ -113,7 +113,9 @@ const FinancialStatementsPage = () => {
                       <TableRow><TableCell className="pl-8">Accounts Payable</TableCell><TableCell className="text-right font-mono">{formatCurrency(balance.liabilities.accounts_payable)}</TableCell></TableRow>
                       <TableRow className="border-t"><TableCell className="font-semibold">Total Liabilities</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(balance.liabilities.total)}</TableCell></TableRow>
                       <TableRow><TableCell className="font-semibold pt-4">Owner's Equity</TableCell><TableCell></TableCell></TableRow>
-                      <TableRow><TableCell className="pl-8">Capital + Retained Earnings</TableCell><TableCell className="text-right font-mono">{formatCurrency(balance.equity.owner_equity)}</TableCell></TableRow>
+                      <TableRow><TableCell className="pl-8">Director Capital</TableCell><TableCell className="text-right font-mono">{formatCurrency(balance.equity.director_capital ?? 0)}</TableCell></TableRow>
+                      <TableRow><TableCell className="pl-8">Retained Earnings</TableCell><TableCell className="text-right font-mono">{formatCurrency(balance.equity.retained_earnings ?? balance.equity.owner_equity)}</TableCell></TableRow>
+                      <TableRow className="border-t"><TableCell className="font-semibold">Total Equity</TableCell><TableCell className="text-right font-mono font-semibold">{formatCurrency(balance.equity.owner_equity)}</TableCell></TableRow>
                       <TableRow className="bg-primary/10 border-t"><TableCell className="font-bold">Total Liabilities + Equity</TableCell><TableCell className="text-right font-mono font-bold">{formatCurrency(balance.liabilities.total + balance.equity.total)}</TableCell></TableRow>
                     </TableBody>
                   </Table>
