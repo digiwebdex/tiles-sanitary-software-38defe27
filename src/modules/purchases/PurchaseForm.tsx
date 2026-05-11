@@ -429,7 +429,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                     </div>
 
                     {/* Row 2: Offer Price, Transport, Labor */}
-                    <div className={`grid grid-cols-1 gap-3 ${showOfferPrice ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {showOfferPrice && (
                         <FormField
                           control={form.control}
@@ -471,7 +471,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                     </div>
 
                     {/* Row 3: Other, SFT (read-only), Landed Cost (read-only) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
                         name={`items.${idx}.other_cost`}
