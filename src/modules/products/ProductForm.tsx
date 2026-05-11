@@ -86,6 +86,7 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
       color: "",
       unit_type: "box_sft",
       per_box_sft: null,
+      pieces_per_box: 1,
       cost_price: 0,
       default_sale_rate: 0,
       reorder_level: 0,
