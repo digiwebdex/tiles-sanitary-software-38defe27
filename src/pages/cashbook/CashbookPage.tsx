@@ -32,11 +32,20 @@ const CashbookPage = () => {
 
   const onExport = () => {
     if (!data?.rows) return;
-    exportToExcel(data.rows.map(r => ({
-      Date: r.entry_date, Account: r.account_kind, Type: r.type,
-      Description: r.description, In: r.amount > 0 ? r.amount : 0, Out: r.amount < 0 ? Math.abs(r.amount) : 0,
-      Balance: r.running_balance,
-    })), "Cashbook");
+    exportToExcel(
+      data.rows.map(r => ({
+        Date: r.entry_date, Account: r.account_kind, Type: r.type,
+        Description: r.description, In: r.amount > 0 ? r.amount : 0, Out: r.amount < 0 ? Math.abs(r.amount) : 0,
+        Balance: r.running_balance,
+      })),
+      [
+        { key: "Date", header: "Date" }, { key: "Account", header: "Account" }, { key: "Type", header: "Type" },
+        { key: "Description", header: "Description" },
+        { key: "In", header: "In", format: "currency" }, { key: "Out", header: "Out", format: "currency" },
+        { key: "Balance", header: "Balance", format: "currency" },
+      ],
+      "Cashbook"
+    );
   };
 
   return (
