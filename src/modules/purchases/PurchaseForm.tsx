@@ -410,7 +410,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                               render={({ field: f }) => (
                                 <FormItem className="space-y-0">
                                   <FormControl>
-                                    <Input type="number" step="0.01" className="h-8 text-sm" {...f} />
+                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -423,7 +423,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                               render={({ field: f }) => (
                                 <FormItem className="space-y-0">
                                   <FormControl>
-                                    <Input type="number" step="0.01" className="h-8 text-sm" {...f} />
+                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -443,7 +443,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                                 render={({ field: f }) => (
                                   <FormItem className="space-y-0">
                                     <FormControl>
-                                      <Input type="number" step="0.01" className="h-8 text-sm" {...f} />
+                                      <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
                                     </FormControl>
                                   </FormItem>
                                 )}
@@ -457,7 +457,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                               render={({ field: f }) => (
                                 <FormItem className="space-y-0">
                                   <FormControl>
-                                    <Input type="number" step="0.01" className="h-8 text-sm" {...f} />
+                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -470,7 +470,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                               render={({ field: f }) => (
                                 <FormItem className="space-y-0">
                                   <FormControl>
-                                    <Input type="number" step="0.01" className="h-8 text-sm" {...f} />
+                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
                                   </FormControl>
                                 </FormItem>
                               )}
@@ -483,7 +483,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                               render={({ field: f }) => (
                                 <FormItem className="space-y-0">
                                   <FormControl>
-                                    <Input type="number" step="0.01" className="h-8 text-sm" {...f} />
+                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
                                   </FormControl>
                                 </FormItem>
                               )}
