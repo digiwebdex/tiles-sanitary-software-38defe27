@@ -10,6 +10,7 @@ export const productSchema = z
     color: z.string().trim().max(30).optional().or(z.literal("")),
     unit_type: z.enum(["box_sft", "piece"], { required_error: "Unit type is required" }),
     per_box_sft: z.coerce.number().min(0).optional().nullable(),
+    pieces_per_box: z.coerce.number().int().positive("Pieces per box must be at least 1").default(1),
     cost_price: z.coerce.number().min(0, "Cost price must be ≥ 0"),
     default_sale_rate: z.coerce.number().positive("Product price must be greater than 0"),
     reorder_level: z.coerce.number().int().min(0, "Reorder level must be ≥ 0"),
