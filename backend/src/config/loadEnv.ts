@@ -43,12 +43,12 @@ export function loadBackendEnv() {
   }
 
   const databaseSources = isProduction ? [{ parsed: parsedRootEnv }, ...existingEnvs] : existingEnvs;
-  const passwordEnv = databaseSources.find(({ parsed }) => isUsableSecret(parsed.DB_PASSWORD))?.parsed;
   const urlEnv = databaseSources.find(({ parsed }) => isUsableSecret(parsed.DATABASE_URL))?.parsed;
+  const passwordEnv = databaseSources.find(({ parsed }) => isUsableSecret(parsed.DB_PASSWORD))?.parsed;
 
-  if (passwordEnv?.DB_PASSWORD) {
-    process.env.DATABASE_URL = buildDatabaseUrl(passwordEnv.DB_PASSWORD);
-  } else if (urlEnv?.DATABASE_URL) {
+  if (urlEnv?.DATABASE_URL) {
     process.env.DATABASE_URL = urlEnv.DATABASE_URL;
+  } else if (passwordEnv?.DB_PASSWORD) {
+    process.env.DATABASE_URL = buildDatabaseUrl(passwordEnv.DB_PASSWORD);
   }
 }
