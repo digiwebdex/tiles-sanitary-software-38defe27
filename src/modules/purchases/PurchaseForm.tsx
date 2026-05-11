@@ -394,120 +394,121 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                       </Button>
                     </div>
 
-                    {/* Row 1: Qty, Rate */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${idx}.quantity`}
-                        render={({ field: f }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Qty (Box/Pc)</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`items.${idx}.purchase_rate`}
-                        render={({ field: f }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Rate (/SFT or /Pc)</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
-                            </FormControl>
-                            {rateChanged && (
-                              <Badge variant="outline" className="mt-1 text-[10px] border-destructive/50 text-destructive gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                Rate changed
-                              </Badge>
-                            )}
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Row 2: Offer Price, Transport, Labor */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {showOfferPrice && (
+                    {/* Rows: Qty, Rate, Offer, Transport, Labor, Other, SFT, Landed — horizontal scroll on narrow */}
+                    <div className="overflow-x-auto -mx-4 px-4">
+                      <div className="grid gap-3 min-w-[900px]" style={{ gridTemplateColumns: `minmax(180px,1fr) minmax(110px,1fr)${showOfferPrice ? ' minmax(110px,1fr)' : ''} minmax(110px,1fr) minmax(110px,1fr) minmax(110px,1fr) minmax(120px,1fr) minmax(120px,1fr)` }}>
                         <FormField
                           control={form.control}
-                          name={`items.${idx}.offer_price`}
+                          name={`items.${idx}.quantity`}
                           render={({ field: f }) => (
-                            <FormItem className="space-y-1">
-                              <FormLabel className="text-xs">Offer Price</FormLabel>
+                            <FormItem className="space-y-1 min-w-[180px]">
+                              <FormLabel className="text-xs">Qty (Box/Pc)</FormLabel>
                               <FormControl>
-                                <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  className="h-10 text-base min-w-[160px]"
+                                  style={{ flexShrink: 0 }}
+                                  {...f}
+                                />
+                              </FormControl>
+                              <div className="text-[10px] text-muted-foreground">e.g. 10 = 10 Box • 0.5 = 0 Box 50% Pc</div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.purchase_rate`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-1 min-w-[110px]">
+                              <FormLabel className="text-xs">Rate (/SFT or /Pc)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" className="h-10 text-base min-w-[90px]" style={{ flexShrink: 0 }} {...f} />
+                              </FormControl>
+                              {rateChanged && (
+                                <Badge variant="outline" className="mt-1 text-[10px] border-destructive/50 text-destructive gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Rate changed
+                                </Badge>
+                              )}
+                            </FormItem>
+                          )}
+                        />
+                        {showOfferPrice && (
+                          <FormField
+                            control={form.control}
+                            name={`items.${idx}.offer_price`}
+                            render={({ field: f }) => (
+                              <FormItem className="space-y-1 min-w-[110px]">
+                                <FormLabel className="text-xs">Offer Price</FormLabel>
+                                <FormControl>
+                                  <Input type="number" step="0.01" className="h-10 text-base min-w-[90px]" style={{ flexShrink: 0 }} {...f} />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.transport_cost`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-1 min-w-[110px]">
+                              <FormLabel className="text-xs">Transport</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" className="h-10 text-base min-w-[90px]" style={{ flexShrink: 0 }} {...f} />
                               </FormControl>
                             </FormItem>
                           )}
                         />
-                      )}
-                      <FormField
-                        control={form.control}
-                        name={`items.${idx}.transport_cost`}
-                        render={({ field: f }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Transport</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`items.${idx}.labor_cost`}
-                        render={({ field: f }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Labor</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Row 3: Other, SFT (read-only), Landed Cost (read-only) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${idx}.other_cost`}
-                        render={({ field: f }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-xs">Other</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium">SFT</div>
-                        <div className="h-10 rounded-md border bg-muted/40 px-3 flex flex-col justify-center text-sm">
-                          {totalSft !== null ? (
-                            <>
-                              <span>{totalSft.toFixed(2)}</span>
-                              {product?.unit_type === "box_sft" && product.per_box_sft && watchItems[idx] && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {watchItems[idx].quantity} × {product.per_box_sft} sft
-                                </span>
-                              )}
-                            </>
-                          ) : "—"}
-                        </div>
-                        {lcPerSft !== null && lcPerSft > 0 && (
-                          <div className="text-[10px] text-primary font-medium">
-                            Landed/SFT: {formatCurrency(lcPerSft)}
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.labor_cost`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-1 min-w-[110px]">
+                              <FormLabel className="text-xs">Labor</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" className="h-10 text-base min-w-[90px]" style={{ flexShrink: 0 }} {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.other_cost`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-1 min-w-[110px]">
+                              <FormLabel className="text-xs">Other</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" className="h-10 text-base min-w-[90px]" style={{ flexShrink: 0 }} {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <div className="space-y-1 min-w-[120px]">
+                          <div className="text-xs font-medium">SFT</div>
+                          <div className="h-10 rounded-md border bg-muted/40 px-3 flex flex-col justify-center text-sm">
+                            {totalSft !== null ? (
+                              <>
+                                <span>{totalSft.toFixed(2)}</span>
+                                {product?.unit_type === "box_sft" && product.per_box_sft && watchItems[idx] && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {watchItems[idx].quantity} × {product.per_box_sft} sft
+                                  </span>
+                                )}
+                              </>
+                            ) : "—"}
                           </div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium">Landed Cost</div>
-                        <div className="h-10 rounded-md border bg-muted/40 px-3 flex items-center justify-end text-sm font-semibold">
-                          {formatCurrency(landedCost)}
+                          {lcPerSft !== null && lcPerSft > 0 && (
+                            <div className="text-[10px] text-primary font-medium">
+                              Landed/SFT: {formatCurrency(lcPerSft)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-1 min-w-[120px]">
+                          <div className="text-xs font-medium">Landed Cost</div>
+                          <div className="h-10 rounded-md border bg-muted/40 px-3 flex items-center justify-end text-sm font-semibold">
+                            {formatCurrency(landedCost)}
+                          </div>
                         </div>
                       </div>
                     </div>
