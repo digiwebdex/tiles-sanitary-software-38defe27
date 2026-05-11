@@ -80,6 +80,20 @@ const SettingsPage = () => {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  const toggleDualUnit = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("dealers")
+        .update({ dual_unit_enabled: enabled } as never)
+        .eq("id", dealerId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: (_, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["dealer-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["dealer-info"] });
+      toast.success(enabled ? "Dual-unit (Box + Pc) mode enabled" : "Dual-unit mode disabled");
+    },
+
   if (!isDealerAdmin) {
     return (
       <div className="container mx-auto max-w-4xl p-6">
