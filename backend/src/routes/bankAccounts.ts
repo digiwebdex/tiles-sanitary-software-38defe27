@@ -176,7 +176,7 @@ router.post('/:id/entry', async (req, res) => {
     entry_date: parsed.data.entry_date ?? db.fn.now(),
     reference_type: parsed.data.reference_type ?? null,
     reference_id: parsed.data.reference_id ?? null,
-    created_by: req.user?.id ?? null,
+    created_by: req.user?.userId ?? null,
   }).returning('*');
   res.status(201).json(row);
 });
