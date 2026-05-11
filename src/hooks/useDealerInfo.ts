@@ -43,6 +43,7 @@ export function useDealerInfo() {
         enable_reservations: Boolean(row.enable_reservations),
         default_wastage_pct: Number(row.default_wastage_pct ?? 10),
         allow_backorder: Boolean(row.allow_backorder),
+        dual_unit_enabled: Boolean(row.dual_unit_enabled),
       };
     },
     enabled: !!dealerId,
