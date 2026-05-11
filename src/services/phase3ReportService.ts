@@ -86,4 +86,14 @@ export const phase3ReportService = {
     if (!r.ok) throw new Error("Failed to load warehouse stock");
     return r.json() as Promise<{ warehouses: WarehouseStockRow[]; recent_transfers: WarehouseTransferRow[] }>;
   },
+  async salaryVoucher(dealerId: string, id: string) {
+    const r = await vpsAuthedFetch(`/api/reports/voucher/salary/${id}?${qs({ dealerId })}`);
+    if (!r.ok) throw new Error("Voucher not found");
+    return r.json();
+  },
+  async directorVoucher(dealerId: string, id: string) {
+    const r = await vpsAuthedFetch(`/api/reports/voucher/director/${id}?${qs({ dealerId })}`);
+    if (!r.ok) throw new Error("Voucher not found");
+    return r.json();
+  },
 };
