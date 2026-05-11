@@ -61,6 +61,9 @@ import teamRoutes from './routes/team';
 import bankAccountsRoutes from './routes/bankAccounts';
 import cashbookRoutes from './routes/cashbook';
 import financialsRoutes from './routes/financials';
+import employeesRoutes from './routes/employees';
+import directorsRoutes from './routes/directors';
+import warehousesRoutes from './routes/warehouses';
 import path from 'path';
 
 const app = express();
