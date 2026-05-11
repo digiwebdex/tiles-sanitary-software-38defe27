@@ -92,6 +92,7 @@ const productWriteSchema = z.object({
   warranty: z.string().trim().max(100).nullable().optional(),
   unit_type: z.enum(['box_sft', 'piece']).optional(),
   per_box_sft: z.number().finite().nullable().optional(),
+  pieces_per_box: z.number().int().positive().optional(),
   cost_price: z.number().finite().min(0).optional(),
   default_sale_rate: z.number().finite().min(0).optional(),
   reorder_level: z.number().finite().min(0).optional(),
