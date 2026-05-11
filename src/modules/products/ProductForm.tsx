@@ -295,6 +295,31 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
                       )}
                     />
                   )}
+
+                  <FormField
+                    control={form.control}
+                    name="pieces_per_box"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pieces per Box <span className="text-destructive">*</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={1}
+                            step={1}
+                            placeholder="e.g. 4"
+                            {...field}
+                            value={field.value ?? 1}
+                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          How many individual pieces are inside one box. Used for Box + Pc dual-unit stock tracking. Default 1 if items are sold loose.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
 
