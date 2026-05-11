@@ -58,6 +58,9 @@ import demandPlanningRoutes from './routes/demandPlanning';
 import backordersRoutes from './routes/backorders';
 import dataExportRoutes from './routes/dataExport';
 import teamRoutes from './routes/team';
+import bankAccountsRoutes from './routes/bankAccounts';
+import cashbookRoutes from './routes/cashbook';
+import financialsRoutes from './routes/financials';
 import path from 'path';
 
 const app = express();
@@ -196,6 +199,9 @@ app.use('/api/demand-planning', demandPlanningRoutes);
 app.use('/api/backorders', backordersRoutes);
 app.use('/api/data-export', dataExportRoutes);
 app.use('/api/team', teamRoutes);
+app.use('/api/bank-accounts', bankAccountsRoutes);
+app.use('/api/cashbook', cashbookRoutes);
+app.use('/api/financials', financialsRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
