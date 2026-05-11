@@ -329,6 +329,31 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
                     Unit: <span className="font-medium text-foreground">Piece</span> (auto-set for sanitary items)
                   </div>
 
+                  <FormField
+                    control={form.control}
+                    name="pieces_per_box"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pieces per Box <span className="text-destructive">*</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={1}
+                            step={1}
+                            placeholder="e.g. 1"
+                            {...field}
+                            value={field.value ?? 1}
+                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Set to 1 for single-piece sanitary items, or higher if sold as carton packs.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <Separator />
 
                   <FormField
