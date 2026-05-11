@@ -93,6 +93,8 @@ const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["dealer-info"] });
       toast.success(enabled ? "Dual-unit (Box + Pc) mode enabled" : "Dual-unit mode disabled");
     },
+    onError: (e) => toast.error((e as Error).message),
+  });
 
   if (!isDealerAdmin) {
     return (
