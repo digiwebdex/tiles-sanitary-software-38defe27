@@ -65,6 +65,9 @@ import FinancialStatementsPage from "./pages/financials/FinancialStatementsPage"
 import HRMPage from "./pages/hrm/HRMPage";
 import DirectorsPage from "./pages/directors/DirectorsPage";
 import WarehousesPage from "./pages/warehouses/WarehousesPage";
+import Phase3ReportsPage from "./pages/reports/Phase3ReportsPage";
+import SalaryVoucherPage from "./pages/vouchers/SalaryVoucherPage";
+import DirectorVoucherPage from "./pages/vouchers/DirectorVoucherPage";
 
 // Super Admin
 import SuperAdminLayout from "./pages/super-admin/SuperAdminLayout";
@@ -188,6 +191,9 @@ const App = () => (
             <Route path="/hrm" element={<ProtectedRoute><AppLayout><HRMPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/warehouses" element={<ProtectedRoute><AppLayout><WarehousesPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/reports/operations" element={<ProtectedRoute><AppLayout><Phase3ReportsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/vouchers/salary/:id" element={<ProtectedRoute><AppLayout><SalaryVoucherPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/vouchers/director/:id" element={<ProtectedRoute><AppLayout><DirectorVoucherPage /></AppLayout></ProtectedRoute>} />
 
             {/* Full-access routes */}
             <Route path="/products" element={<ProtectedRoute><AppLayout><ProductsPage /></AppLayout></ProtectedRoute>} />
