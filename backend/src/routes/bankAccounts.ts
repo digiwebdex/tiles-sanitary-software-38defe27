@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
       .where({ dealer_id: dealerId })
       .whereIn('bank_account_id', ids)
       .groupBy('bank_account_id');
-    balances = Object.fromEntries(sums.map(s => [s.bank_account_id, Number(s.total) || 0]));
+    balances = Object.fromEntries(sums.map((s: any) => [s.bank_account_id, Number(s.total) || 0]));
   }
   res.json(rows.map(r => ({ ...r, balance: balances[r.id] ?? Number(r.opening_balance) })));
 });
@@ -176,7 +176,7 @@ router.post('/:id/entry', async (req, res) => {
     entry_date: parsed.data.entry_date ?? db.fn.now(),
     reference_type: parsed.data.reference_type ?? null,
     reference_id: parsed.data.reference_id ?? null,
-    created_by: req.user?.id ?? null,
+    created_by: req.user?.userId ?? null,
   }).returning('*');
   res.status(201).json(row);
 });
