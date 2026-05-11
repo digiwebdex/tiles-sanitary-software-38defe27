@@ -192,6 +192,39 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
+          {/* Dual-Unit (Box + Piece) Stock Mode */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Dual-Unit Stock Mode (Box + Piece)
+              </CardTitle>
+              <CardDescription>
+                Track and bill stock in both Box and individual Piece units. Each product uses its{" "}
+                <span className="font-medium text-foreground">Pieces per Box</span> value to convert.
+                Stock displays as <span className="font-mono">X box Y pcs</span>. Phase 1 ships the schema; Purchase/Sale forms switch to Box + Pc inputs in the next phase.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="dual-unit" className="text-sm font-medium">
+                    Enable Dual-Unit Mode
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Off by default. When enabled, Purchase, Sale, Return and Reservation forms will accept separate Box Qty and Piece Qty fields for this dealer.
+                  </p>
+                </div>
+                <Switch
+                  id="dual-unit"
+                  checked={(dealer as any)?.dual_unit_enabled === true}
+                  onCheckedChange={(checked) => toggleDualUnit.mutate(checked)}
+                  disabled={toggleDualUnit.isPending}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Area Calculator Defaults */}
           <Card>
             <CardHeader>
