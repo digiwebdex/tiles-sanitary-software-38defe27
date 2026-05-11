@@ -27,7 +27,7 @@ const EditCustomer = () => {
   );
 
   return (
-    <div className="p-4 lg:p-6 max-w-2xl mx-auto">
+    <div className="p-4 lg:p-6 max-w-5xl mx-auto">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
