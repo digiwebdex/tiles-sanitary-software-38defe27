@@ -29,11 +29,11 @@ const SettingsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dealers")
-        .select("id, name, allow_backorder, default_wastage_pct")
+        .select("id, name, allow_backorder, default_wastage_pct, dual_unit_enabled")
         .eq("id", dealerId)
         .single();
       if (error) throw new Error(error.message);
-      return data as { id: string; name: string; allow_backorder: boolean; default_wastage_pct: number };
+      return data as { id: string; name: string; allow_backorder: boolean; default_wastage_pct: number; dual_unit_enabled: boolean };
     },
     enabled: !!dealerId,
   });
