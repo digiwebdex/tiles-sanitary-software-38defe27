@@ -354,237 +354,219 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
           </CardContent>
         </Card>
 
-        {/* Items table */}
+        {/* Items list - card per item, 3 rows of fields */}
         {fields.length > 0 && (
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-8">#</TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="w-32">Qty (Box/Pc)</TableHead>
-                      <TableHead className="w-32">Rate (/SFT or /Pc)</TableHead>
-                      {showOfferPrice && <TableHead className="w-32">Offer Price</TableHead>}
-                      <TableHead className="w-32">Transport</TableHead>
-                      <TableHead className="w-32">Labor</TableHead>
-                      <TableHead className="w-32">Other</TableHead>
-                      <TableHead className="w-24">SFT</TableHead>
-                      <TableHead className="w-28 text-right">Landed Cost</TableHead>
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fields.map((field, idx) => {
-                      const product = getItemProduct(watchItems[idx]?.product_id);
-                      const totalSft = calcTotalSft(idx);
-                      const landedCost = calcLandedCost(idx);
-                      const lastInfo = product ? lastPurchaseMap.get(product.id) : undefined;
-                      const avgCost = product ? avgCostMap.get(product.id) : undefined;
-                      const currentRate = watchItems[idx]?.purchase_rate || 0;
-                      const rateChanged = lastInfo && lastInfo.purchase_rate > 0 && currentRate > 0 && currentRate !== lastInfo.purchase_rate;
+          <div className="space-y-3">
+            {fields.map((field, idx) => {
+              const product = getItemProduct(watchItems[idx]?.product_id);
+              const totalSft = calcTotalSft(idx);
+              const landedCost = calcLandedCost(idx);
+              const lastInfo = product ? lastPurchaseMap.get(product.id) : undefined;
+              const avgCost = product ? avgCostMap.get(product.id) : undefined;
+              const currentRate = watchItems[idx]?.purchase_rate || 0;
+              const rateChanged = lastInfo && lastInfo.purchase_rate > 0 && currentRate > 0 && currentRate !== lastInfo.purchase_rate;
+              const lcPerSft = calcLandedCostPerSft(idx);
 
-                      return (
-                        <React.Fragment key={field.id}>
-                        <TableRow>
-                          <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
-                          <TableCell>
-                            <div className="text-sm font-medium">{product?.name ?? "—"}</div>
-                            <div className="text-xs text-muted-foreground">{product?.sku}</div>
-                            {lastInfo && (
-                              <div className="text-xs text-primary font-medium mt-0.5">
-                                Last Rate: {formatCurrency(lastInfo.purchase_rate)} ({formatDate(lastInfo.purchase_date)}) - {lastInfo.supplier_name}
-                              </div>
-                            )}
-                            {avgCost !== undefined && avgCost > 0 && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                Avg Cost: {formatCurrency(avgCost)}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${idx}.quantity`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0">
-                                  <FormControl>
-                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${idx}.purchase_rate`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0">
-                                  <FormControl>
-                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
+              return (
+                <Card key={field.id}>
+                  <CardContent className="p-4 space-y-3">
+                    {/* Header: # + Product info + delete */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <span className="text-sm text-muted-foreground font-medium pt-0.5">#{idx + 1}</span>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold">{product?.name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground">{product?.sku}</div>
+                          {lastInfo && (
+                            <div className="text-xs text-primary font-medium mt-0.5">
+                              Last Rate: {formatCurrency(lastInfo.purchase_rate)} ({formatDate(lastInfo.purchase_date)}) - {lastInfo.supplier_name}
+                            </div>
+                          )}
+                          {avgCost !== undefined && avgCost > 0 && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Avg Cost: {formatCurrency(avgCost)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(idx)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+
+                    {/* Row 1: Qty, Rate */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name={`items.${idx}.quantity`}
+                        render={({ field: f }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-xs">Qty (Box/Pc)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`items.${idx}.purchase_rate`}
+                        render={({ field: f }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-xs">Rate (/SFT or /Pc)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                            </FormControl>
                             {rateChanged && (
                               <Badge variant="outline" className="mt-1 text-[10px] border-destructive/50 text-destructive gap-1">
                                 <AlertTriangle className="h-3 w-3" />
                                 Rate changed
                               </Badge>
                             )}
-                          </TableCell>
-                          {showOfferPrice && (
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${idx}.offer_price`}
-                                render={({ field: f }) => (
-                                  <FormItem className="space-y-0">
-                                    <FormControl>
-                                      <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-                            </TableCell>
-                          )}
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${idx}.transport_cost`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0">
-                                  <FormControl>
-                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${idx}.labor_cost`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0">
-                                  <FormControl>
-                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${idx}.other_cost`}
-                              render={({ field: f }) => (
-                                <FormItem className="space-y-0">
-                                  <FormControl>
-                                    <Input type="number" step="0.01" className="h-9 text-base w-full" {...f} />
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {totalSft !== null ? (
-                              <div>
-                                <div>{totalSft.toFixed(2)}</div>
-                                {product?.unit_type === "box_sft" && product.per_box_sft && watchItems[idx] && (
-                                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                                    {watchItems[idx].quantity} × {product.per_box_sft} sft
-                                    {watchItems[idx].purchase_rate > 0 && (
-                                      <> × {formatCurrency(watchItems[idx].purchase_rate)} = {formatCurrency(calcBaseCost(idx))}</>
-                                    )}
-                                  </div>
-                                )}
-                                {(() => {
-                                  const lcPerSft = calcLandedCostPerSft(idx);
-                                  return lcPerSft !== null && lcPerSft > 0 ? (
-                                    <div className="text-[10px] text-primary font-medium mt-0.5">
-                                      Landed/SFT: {formatCurrency(lcPerSft)}
-                                    </div>
-                                  ) : null;
-                                })()}
-                              </div>
-                            ) : "—"}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-sm">
-                            {formatCurrency(landedCost)}
-                          </TableCell>
-                          <TableCell>
-                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(idx)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                        {/* Batch fields row */}
-                        {product?.category === "tiles" && (
-                          <TableRow className="bg-muted/20 border-b">
-                            <TableCell></TableCell>
-                            <TableCell colSpan={showOfferPrice ? 9 : 8}>
-                              <div className="flex flex-wrap gap-2 py-1">
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${idx}.batch_no`}
-                                  render={({ field: f }) => (
-                                    <FormItem className="space-y-0">
-                                      <FormControl>
-                                        <Input placeholder="Batch No" className="h-7 text-xs w-28" {...f} />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${idx}.shade_code`}
-                                  render={({ field: f }) => (
-                                    <FormItem className="space-y-0">
-                                      <FormControl>
-                                        <Input placeholder="Shade" className="h-7 text-xs w-20" {...f} />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${idx}.caliber`}
-                                  render={({ field: f }) => (
-                                    <FormItem className="space-y-0">
-                                      <FormControl>
-                                        <Input placeholder="Caliber" className="h-7 text-xs w-20" {...f} />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${idx}.lot_no`}
-                                  render={({ field: f }) => (
-                                    <FormItem className="space-y-0">
-                                      <FormControl>
-                                        <Input placeholder="Lot No" className="h-7 text-xs w-24" {...f} />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                                <span className="text-[10px] text-muted-foreground self-center">Batch/Shade tracking</span>
-                              </div>
-                            </TableCell>
-                            <TableCell></TableCell>
-                          </TableRow>
+                          </FormItem>
                         )}
-                      </React.Fragment>
-                    );
-                  })}
-                </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                      />
+                    </div>
+
+                    {/* Row 2: Offer Price, Transport, Labor */}
+                    <div className={`grid grid-cols-1 gap-3 ${showOfferPrice ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                      {showOfferPrice && (
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.offer_price`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-1">
+                              <FormLabel className="text-xs">Offer Price</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      <FormField
+                        control={form.control}
+                        name={`items.${idx}.transport_cost`}
+                        render={({ field: f }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-xs">Transport</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`items.${idx}.labor_cost`}
+                        render={({ field: f }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-xs">Labor</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Row 3: Other, SFT (read-only), Landed Cost (read-only) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <FormField
+                        control={form.control}
+                        name={`items.${idx}.other_cost`}
+                        render={({ field: f }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-xs">Other</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" className="h-10 text-base" {...f} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium">SFT</div>
+                        <div className="h-10 rounded-md border bg-muted/40 px-3 flex flex-col justify-center text-sm">
+                          {totalSft !== null ? (
+                            <>
+                              <span>{totalSft.toFixed(2)}</span>
+                              {product?.unit_type === "box_sft" && product.per_box_sft && watchItems[idx] && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {watchItems[idx].quantity} × {product.per_box_sft} sft
+                                </span>
+                              )}
+                            </>
+                          ) : "—"}
+                        </div>
+                        {lcPerSft !== null && lcPerSft > 0 && (
+                          <div className="text-[10px] text-primary font-medium">
+                            Landed/SFT: {formatCurrency(lcPerSft)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium">Landed Cost</div>
+                        <div className="h-10 rounded-md border bg-muted/40 px-3 flex items-center justify-end text-sm font-semibold">
+                          {formatCurrency(landedCost)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Batch fields for tiles */}
+                    {product?.category === "tiles" && (
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.batch_no`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-0">
+                              <FormControl>
+                                <Input placeholder="Batch No" className="h-8 text-xs w-32" {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.shade_code`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-0">
+                              <FormControl>
+                                <Input placeholder="Shade" className="h-8 text-xs w-24" {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.caliber`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-0">
+                              <FormControl>
+                                <Input placeholder="Caliber" className="h-8 text-xs w-24" {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${idx}.lot_no`}
+                          render={({ field: f }) => (
+                            <FormItem className="space-y-0">
+                              <FormControl>
+                                <Input placeholder="Lot No" className="h-8 text-xs w-28" {...f} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <span className="text-[10px] text-muted-foreground">Batch/Shade tracking</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
 
         {fields.length === 0 && watchSupplierId && (
