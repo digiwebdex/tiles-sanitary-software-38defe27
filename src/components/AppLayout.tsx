@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Receipt, RotateCcw,
   BookOpen, BarChart3, LogOut, Settings, Clock, Truck, Users, ShieldCheck, FileText,
   Undo2, MapPin, Zap, Gift, Wallet, FileSignature, Folder, HandCoins, MonitorSpeaker,
-  MessageCircle, UserCog, Inbox, HelpCircle, Crown,
+  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDealerId } from "@/hooks/useDealerId";
@@ -33,6 +33,9 @@ const navItems = [
   { path: "/purchase-returns", label: "Purchase Returns", icon: Undo2 },
   { path: "/ledger", label: "Ledger", icon: BookOpen },
   { path: "/collections", label: "Payments", icon: Wallet },
+  { path: "/bank-accounts", label: "Bank Accounts", icon: Landmark, dealerAdminOnly: true },
+  { path: "/cashbook", label: "Cashbook", icon: BookOpen, dealerAdminOnly: true },
+  { path: "/financials", label: "Financial Statements", icon: Scale, dealerAdminOnly: true },
   { path: "/approvals", label: "Approvals", icon: ShieldCheck },
   { path: "/campaigns", label: "Campaigns", icon: Gift },
   { path: "/referrals", label: "Referrals", icon: HandCoins },

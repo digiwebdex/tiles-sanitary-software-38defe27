@@ -58,6 +58,10 @@ import ReferralSourcesPage from "./pages/referrals/ReferralSourcesPage";
 import DisplaySampleStockPage from "./pages/display-sample/DisplaySampleStockPage";
 import WhatsAppLogsPage from "./pages/whatsapp/WhatsAppLogsPage";
 import UserGuidePage from "./pages/UserGuidePage";
+import BankAccountsPage from "./pages/bank-accounts/BankAccountsPage";
+import BankAccountDetailPage from "./pages/bank-accounts/BankAccountDetailPage";
+import CashbookPage from "./pages/cashbook/CashbookPage";
+import FinancialStatementsPage from "./pages/financials/FinancialStatementsPage";
 
 // Super Admin
 import SuperAdminLayout from "./pages/super-admin/SuperAdminLayout";
@@ -174,6 +178,10 @@ const App = () => (
             <Route path="/settings/pricing-tiers" element={<ProtectedRoute><AppLayout><PricingTiersPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/data-backup" element={<ProtectedRoute><AppLayout><DataBackupPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/roles" element={<ProtectedRoute><AppLayout><RoleManagementPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/bank-accounts" element={<ProtectedRoute><AppLayout><BankAccountsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/bank-accounts/:id" element={<ProtectedRoute><AppLayout><BankAccountDetailPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/cashbook" element={<ProtectedRoute><AppLayout><CashbookPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/financials" element={<ProtectedRoute><AppLayout><FinancialStatementsPage /></AppLayout></ProtectedRoute>} />
 
             {/* Full-access routes */}
             <Route path="/products" element={<ProtectedRoute><AppLayout><ProductsPage /></AppLayout></ProtectedRoute>} />
