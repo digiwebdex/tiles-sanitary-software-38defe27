@@ -37,7 +37,7 @@ const CreateSalesReturnPage = () => {
   });
 
   return (
-    <div className="container mx-auto max-w-3xl space-y-4 p-6">
+    <div className="container mx-auto max-w-6xl space-y-4 p-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => navigate("/sales-returns")}>
           <ArrowLeft className="h-4 w-4" />

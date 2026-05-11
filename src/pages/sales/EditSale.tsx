@@ -107,7 +107,7 @@ const EditSalePage = () => {
     : null;
 
   return (
-    <div className="container mx-auto max-w-4xl space-y-4 p-6">
+    <div className="container mx-auto max-w-7xl space-y-4 p-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/sales/${id}/invoice`)}>
           <ArrowLeft className="h-4 w-4" />

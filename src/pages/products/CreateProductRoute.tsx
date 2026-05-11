@@ -5,7 +5,7 @@ const CreateProductRoute = () => {
   const dealerId = useDealerId();
 
   return (
-    <div className="container mx-auto max-w-3xl p-6">
+    <div className="container mx-auto max-w-7xl p-6">
       <CreateProductPage dealerId={dealerId} />
     </div>
   );
