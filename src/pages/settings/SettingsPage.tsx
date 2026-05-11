@@ -29,11 +29,11 @@ const SettingsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dealers")
-        .select("id, name, allow_backorder, default_wastage_pct")
+        .select("id, name, allow_backorder, default_wastage_pct, dual_unit_enabled" as never)
         .eq("id", dealerId)
         .single();
       if (error) throw new Error(error.message);
-      return data as { id: string; name: string; allow_backorder: boolean; default_wastage_pct: number };
+      return data as unknown as { id: string; name: string; allow_backorder: boolean; default_wastage_pct: number; dual_unit_enabled: boolean };
     },
     enabled: !!dealerId,
   });
@@ -76,6 +76,22 @@ const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["dealer-settings"] });
       queryClient.invalidateQueries({ queryKey: ["dealer-info"] });
       toast.success("Default wastage saved");
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const toggleDualUnit = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from("dealers")
+        .update({ dual_unit_enabled: enabled } as never)
+        .eq("id", dealerId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: (_, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["dealer-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["dealer-info"] });
+      toast.success(enabled ? "Dual-unit (Box + Pc) mode enabled" : "Dual-unit mode disabled");
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -172,6 +188,39 @@ const SettingsPage = () => {
                     Allows billing even when stock is insufficient.
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dual-Unit (Box + Piece) Stock Mode */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Dual-Unit Stock Mode (Box + Piece)
+              </CardTitle>
+              <CardDescription>
+                Track and bill stock in both Box and individual Piece units. Each product uses its{" "}
+                <span className="font-medium text-foreground">Pieces per Box</span> value to convert.
+                Stock displays as <span className="font-mono">X box Y pcs</span>. Phase 1 ships the schema; Purchase/Sale forms switch to Box + Pc inputs in the next phase.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="dual-unit" className="text-sm font-medium">
+                    Enable Dual-Unit Mode
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Off by default. When enabled, Purchase, Sale, Return and Reservation forms will accept separate Box Qty and Piece Qty fields for this dealer.
+                  </p>
+                </div>
+                <Switch
+                  id="dual-unit"
+                  checked={(dealer as any)?.dual_unit_enabled === true}
+                  onCheckedChange={(checked) => toggleDualUnit.mutate(checked)}
+                  disabled={toggleDualUnit.isPending}
+                />
               </div>
             </CardContent>
           </Card>

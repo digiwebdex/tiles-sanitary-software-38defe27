@@ -86,6 +86,7 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
       color: "",
       unit_type: "box_sft",
       per_box_sft: null,
+      pieces_per_box: 1,
       cost_price: 0,
       default_sale_rate: 0,
       reorder_level: 0,
@@ -294,6 +295,31 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
                       )}
                     />
                   )}
+
+                  <FormField
+                    control={form.control}
+                    name="pieces_per_box"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pieces per Box <span className="text-destructive">*</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={1}
+                            step={1}
+                            placeholder="e.g. 4"
+                            {...field}
+                            value={field.value ?? 1}
+                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          How many individual pieces are inside one box. Used for Box + Pc dual-unit stock tracking. Default 1 if items are sold loose.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
 
@@ -302,6 +328,31 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
                   <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                     Unit: <span className="font-medium text-foreground">Piece</span> (auto-set for sanitary items)
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="pieces_per_box"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pieces per Box <span className="text-destructive">*</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={1}
+                            step={1}
+                            placeholder="e.g. 1"
+                            {...field}
+                            value={field.value ?? 1}
+                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Set to 1 for single-piece sanitary items, or higher if sold as carton packs.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <Separator />
 
