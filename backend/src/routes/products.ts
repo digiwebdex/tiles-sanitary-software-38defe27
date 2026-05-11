@@ -71,6 +71,7 @@ const WRITABLE = new Set([
   'warranty',
   'unit_type',
   'per_box_sft',
+  'pieces_per_box',
   'cost_price',
   'default_sale_rate',
   'reorder_level',
