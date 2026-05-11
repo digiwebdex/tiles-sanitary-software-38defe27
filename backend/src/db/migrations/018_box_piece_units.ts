@@ -7,17 +7,15 @@ import type { Knex } from 'knex';
  *   - products.pieces_per_box            (default 1, > 0)
  *   - dealers.dual_unit_enabled          (default false)
  *   - purchase_items / sale_items / sales_returns / purchase_return_items:
- *         box_qty, piece_qty, total_pieces (back-filled from existing quantity)
- *   - product_batches.total_pieces, pieces_per_box_snapshot
+ *         box_qty, piece_qty, total_pieces (back-filled)
+ *   - product_batches.total_pieces, pieces_per_box_snapshot   (if table exists)
  *   - stock.total_pieces, reserved_total_pieces
- *   - stock_reservations.total_pieces
- *   - stock_ledger (new audit table for every stock-affecting txn)
- *   - format_box_piece(pieces, ppb) -> text   SQL helper
+ *   - stock_reservations.total_pieces                          (if table exists)
+ *   - stock_ledger (new audit table)
+ *   - format_box_piece(pieces, ppb) -> text  SQL helper
  *
- * Pieces is the canonical unit going forward. SFT remains for tile pricing
- * (Option B). Existing Box / SFT / Piece columns are NOT removed in this
- * migration — they are kept in sync by the new RPCs (Phase 2) so legacy code
- * keeps working until every dealer is flipped over.
+ * Pieces is the canonical unit going forward. SFT remains for tile pricing.
+ * Existing Box / SFT / Piece columns are NOT removed in this migration.
  */
 export async function up(knex: Knex): Promise<void> {
   // ---------------------------------------------------------------- products
@@ -41,8 +39,6 @@ export async function up(knex: Knex): Promise<void> {
     t.decimal('piece_qty', 12, 2).notNullable().defaultTo(0);
     t.decimal('total_pieces', 14, 2).notNullable().defaultTo(0);
   });
-  // Back-fill: legacy `quantity` was box-or-piece depending on unit_type.
-  // Treat as box_qty for now; total_pieces = quantity * (ppb or 1).
   await knex.raw(`
     UPDATE public.purchase_items pi
        SET box_qty       = pi.quantity,
@@ -68,9 +64,7 @@ export async function up(knex: Knex): Promise<void> {
   `);
 
   // ---------------------------------------------------- purchase_return_items
-  // (table exists in current schema — verify before adding)
-  const hasPRItems = await knex.schema.hasTable('purchase_return_items');
-  if (hasPRItems) {
+  if (await knex.schema.hasTable('purchase_return_items')) {
     await knex.schema.alterTable('purchase_return_items', (t) => {
       t.decimal('box_qty', 12, 2).notNullable().defaultTo(0);
       t.decimal('piece_qty', 12, 2).notNullable().defaultTo(0);
@@ -78,51 +72,49 @@ export async function up(knex: Knex): Promise<void> {
     });
     await knex.raw(`
       UPDATE public.purchase_return_items pri
-         SET box_qty      = pri.quantity,
+         SET box_qty      = COALESCE(pri.quantity, 0),
              piece_qty    = 0,
-             total_pieces = pri.quantity * COALESCE(p.pieces_per_box, 1)
+             total_pieces = COALESCE(pri.quantity, 0) * COALESCE(p.pieces_per_box, 1)
         FROM public.products p
        WHERE p.id = pri.product_id
     `);
   }
 
-  // --------------------------------------------------------- sales_returns(*)
-  // Sales returns may live in `sales_returns` or `sale_returns`; handle both.
-  for (const tbl of ['sales_returns', 'sale_returns']) {
-    if (await knex.schema.hasTable(tbl)) {
-      await knex.schema.alterTable(tbl, (t) => {
-        t.decimal('box_qty', 12, 2).notNullable().defaultTo(0);
-        t.decimal('piece_qty', 12, 2).notNullable().defaultTo(0);
-        t.decimal('total_pieces', 14, 2).notNullable().defaultTo(0);
-      });
-      await knex.raw(`
-        UPDATE public.${tbl} sr
-           SET box_qty      = COALESCE(sr.qty, 0),
-               piece_qty    = 0,
-               total_pieces = COALESCE(sr.qty, 0) * COALESCE(p.pieces_per_box, 1)
-          FROM public.products p
-         WHERE p.id = sr.product_id
-      `);
-    }
+  // --------------------------------------------------------- sales_returns
+  // VPS schema uses `sales_returns` with column `qty`.
+  if (await knex.schema.hasTable('sales_returns')) {
+    await knex.schema.alterTable('sales_returns', (t) => {
+      t.decimal('box_qty', 12, 2).notNullable().defaultTo(0);
+      t.decimal('piece_qty', 12, 2).notNullable().defaultTo(0);
+      t.decimal('total_pieces', 14, 2).notNullable().defaultTo(0);
+    });
+    await knex.raw(`
+      UPDATE public.sales_returns sr
+         SET box_qty      = COALESCE(sr.qty, 0),
+             piece_qty    = 0,
+             total_pieces = COALESCE(sr.qty, 0) * COALESCE(p.pieces_per_box, 1)
+        FROM public.products p
+       WHERE p.id = sr.product_id
+    `);
   }
 
   // ---------------------------------------------------------- product_batches
-  await knex.schema.alterTable('product_batches', (t) => {
-    t.decimal('total_pieces', 14, 2).notNullable().defaultTo(0);
-    // Snapshot of pieces_per_box at the time the batch was created so historic
-    // FIFO math stays stable even if the product's pieces_per_box is later
-    // edited.
-    t.integer('pieces_per_box_snapshot').notNullable().defaultTo(1);
-  });
-  await knex.raw(`
-    UPDATE public.product_batches pb
-       SET pieces_per_box_snapshot = COALESCE(p.pieces_per_box, 1),
-           total_pieces            = (COALESCE(pb.box_qty, 0)
-                                      + COALESCE(pb.piece_qty, 0))
-                                     * COALESCE(p.pieces_per_box, 1)
-      FROM public.products p
-     WHERE p.id = pb.product_id
-  `);
+  // Optional — only present on installations that use FIFO batch tracking.
+  if (await knex.schema.hasTable('product_batches')) {
+    await knex.schema.alterTable('product_batches', (t) => {
+      t.decimal('total_pieces', 14, 2).notNullable().defaultTo(0);
+      t.integer('pieces_per_box_snapshot').notNullable().defaultTo(1);
+    });
+    await knex.raw(`
+      UPDATE public.product_batches pb
+         SET pieces_per_box_snapshot = COALESCE(p.pieces_per_box, 1),
+             total_pieces            = (COALESCE(pb.box_qty, 0)
+                                        + COALESCE(pb.piece_qty, 0))
+                                       * COALESCE(p.pieces_per_box, 1)
+        FROM public.products p
+       WHERE p.id = pb.product_id
+    `);
+  }
 
   // ------------------------------------------------------------------- stock
   await knex.schema.alterTable('stock', (t) => {
@@ -166,14 +158,14 @@ export async function up(knex: Knex): Promise<void> {
     t.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     t.uuid('dealer_id').notNullable().references('id').inTable('dealers').onDelete('CASCADE');
     t.uuid('product_id').notNullable().references('id').inTable('products');
-    t.string('txn_type', 32).notNullable();           // purchase|sale|sales_return|purchase_return|adjustment|reservation_consume|reservation_release
+    t.string('txn_type', 32).notNullable();
     t.string('reference_table', 64).nullable();
     t.uuid('reference_id').nullable();
     t.string('reference_no', 64).nullable();
     t.decimal('box_qty', 12, 2).notNullable().defaultTo(0);
     t.decimal('piece_qty', 12, 2).notNullable().defaultTo(0);
     t.integer('pieces_per_box').notNullable();
-    t.decimal('total_pieces', 14, 2).notNullable();   // signed: + on inflow, - on outflow
+    t.decimal('total_pieces', 14, 2).notNullable();
     t.decimal('stock_before_pieces', 14, 2).notNullable();
     t.decimal('stock_after_pieces', 14, 2).notNullable();
     t.string('stock_before_display', 32).notNullable();
@@ -224,12 +216,14 @@ export async function down(knex: Knex): Promise<void> {
     t.dropColumn('reserved_total_pieces');
   });
 
-  await knex.schema.alterTable('product_batches', (t) => {
-    t.dropColumn('total_pieces');
-    t.dropColumn('pieces_per_box_snapshot');
-  });
+  if (await knex.schema.hasTable('product_batches')) {
+    await knex.schema.alterTable('product_batches', (t) => {
+      t.dropColumn('total_pieces');
+      t.dropColumn('pieces_per_box_snapshot');
+    });
+  }
 
-  for (const tbl of ['sales_returns', 'sale_returns', 'purchase_return_items', 'sale_items', 'purchase_items']) {
+  for (const tbl of ['sales_returns', 'purchase_return_items', 'sale_items', 'purchase_items']) {
     if (await knex.schema.hasTable(tbl)) {
       await knex.schema.alterTable(tbl, (t) => {
         t.dropColumn('total_pieces');
