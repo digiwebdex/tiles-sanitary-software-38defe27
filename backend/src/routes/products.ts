@@ -288,7 +288,7 @@ router.get('/stock-map', async (req: Request, res: Response) => {
     if (!dealerId) return;
     const rows = await db('stock')
       .where({ dealer_id: dealerId })
-      .select('product_id', 'box_qty', 'sft_qty', 'piece_qty', 'reserved_box_qty', 'reserved_piece_qty');
+      .select('product_id', 'box_qty', 'sft_qty', 'piece_qty', 'total_pieces', 'reserved_box_qty', 'reserved_piece_qty', 'reserved_total_pieces');
     res.json({ rows });
   } catch (err: any) {
     console.error('[products/stock-map]', err.message);
