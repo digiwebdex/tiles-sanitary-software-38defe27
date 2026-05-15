@@ -237,7 +237,7 @@ router.post('/', async (req: Request, res: Response) => {
     const products = await db('products')
       .whereIn('id', productIds)
       .andWhere({ dealer_id: dealerId })
-      .select('id', 'unit_type', 'per_box_sft');
+      .select('id', 'unit_type', 'per_box_sft', 'pieces_per_box');
 
     if (products.length !== productIds.length) {
       res.status(400).json({ error: 'One or more products not found for this dealer' });
@@ -259,10 +259,16 @@ router.post('/', async (req: Request, res: Response) => {
       const product = productMap.get(item.product_id)!;
       const unitType = product.unit_type ?? 'piece';
       const perBoxSft = product.per_box_sft ?? null;
+      const piecesPerBox = Math.max(1, Math.floor(Number(product.pieces_per_box) || 1));
       const base = calcBaseCost(item, unitType, perBoxSft);
       const landed = calcLanded(base, item);
       const totalSft = calcTotalSft(item.quantity, unitType, perBoxSft);
-      return { src: item, product, unitType, perBoxSft, landed, totalSft };
+      // Canonical pieces delta. For tiles (box_sft) item.quantity = boxes, piece_qty=0.
+      // For piece-unit products, item.quantity = pieces, ppb=1.
+      const boxQty = unitType === 'box_sft' ? item.quantity : 0;
+      const pieceQty = unitType === 'box_sft' ? 0 : item.quantity;
+      const totalPieces = boxQty * piecesPerBox + pieceQty;
+      return { src: item, product, unitType, perBoxSft, piecesPerBox, landed, totalSft, boxQty, pieceQty, totalPieces };
     });
     const totalAmount = itemsCalc.reduce((s, x) => s + x.landed, 0);
 
