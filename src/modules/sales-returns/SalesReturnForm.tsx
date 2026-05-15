@@ -80,6 +80,18 @@ const SalesReturnForm = ({ dealerId, onSubmit, isLoading }: SalesReturnFormProps
   const watchProductId = form.watch("product_id");
   const watchRefund = form.watch("refund_amount");
   const selectedItem = saleItems.find((i: any) => i.product_id === watchProductId);
+  const isTile = selectedItem?.products?.unit_type === "box_sft";
+  const ppb = Math.max(1, Number(selectedItem?.products?.pieces_per_box ?? 1));
+  const boxPart = Math.floor(watchQty || 0);
+  const piecePart = Math.round(((watchQty || 0) - boxPart) * ppb);
+
+  const setQtyFromBoxPiece = (box: number, piece: number) => {
+    const total = (Number(box) || 0) + (Number(piece) || 0) / ppb;
+    form.setValue("qty", total);
+    if (selectedItem) {
+      form.setValue("refund_amount", total * Number(selectedItem.sale_rate));
+    }
+  };
 
   const selectProduct = (productId: string) => {
     form.setValue("product_id", productId);
