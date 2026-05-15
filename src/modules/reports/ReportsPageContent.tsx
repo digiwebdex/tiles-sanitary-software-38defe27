@@ -26,6 +26,7 @@ import {
 } from "@/services/reportService";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import { formatCurrency } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportToExcel } from "@/lib/exportUtils";
 import { usePermissions } from "@/hooks/usePermissions";
