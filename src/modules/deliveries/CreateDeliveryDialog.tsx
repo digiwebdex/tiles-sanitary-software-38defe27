@@ -119,6 +119,7 @@ const CreateDeliveryDialog = ({ open, onClose, sale, dealerId }: Props) => {
                   {saleItems.map((si: any) => {
                     const product = si.products;
                     const isBox = product?.unit_type === "box_sft";
+                    const ppb = Number(product?.pieces_per_box) || 1;
                     const unit = isBox ? "box" : "pc";
                     const ordered = Number(si.quantity);
                     const delivered = deliveredQty[si.id] || 0;
@@ -140,8 +141,8 @@ const CreateDeliveryDialog = ({ open, onClose, sale, dealerId }: Props) => {
                             <span className="font-medium">{product?.name}</span>
                             {product?.sku && <span className="text-xs text-muted-foreground ml-1">({product.sku})</span>}
                           </td>
-                          <td className="text-center px-3 py-2">{ordered} {unit}</td>
-                          <td className="text-center px-3 py-2 text-green-600 font-medium">{delivered} {unit}</td>
+                          <td className="text-center px-3 py-2">{formatStockUnit(ordered, ppb, isBox)}</td>
+                          <td className="text-center px-3 py-2 text-green-600 font-medium">{formatStockUnit(delivered, ppb, isBox)}</td>
                           <td className="text-center px-3 py-2">
                             <Badge className="bg-green-600 text-white text-xs">Complete</Badge>
                           </td>
@@ -160,10 +161,10 @@ const CreateDeliveryDialog = ({ open, onClose, sale, dealerId }: Props) => {
                           </div>
                           <Progress value={progress} className="h-1.5 mt-1" />
                         </td>
-                        <td className="text-center px-3 py-2">{ordered} {unit}</td>
-                        <td className="text-center px-3 py-2">{delivered} {unit}</td>
+                        <td className="text-center px-3 py-2">{formatStockUnit(ordered, ppb, isBox)}</td>
+                        <td className="text-center px-3 py-2">{formatStockUnit(delivered, ppb, isBox)}</td>
                         <td className="text-center px-3 py-2 font-semibold text-orange-600">
-                          {remaining} {unit}
+                          {formatStockUnit(remaining, ppb, isBox)}
                           {backorderQty > 0 && (
                             <span className="block text-xs text-amber-600">
                               ({allocatedQty}/{backorderQty} allocated)
@@ -177,7 +178,7 @@ const CreateDeliveryDialog = ({ open, onClose, sale, dealerId }: Props) => {
                             </span>
                           ) : (
                             <span className={availableStock < remaining ? "text-yellow-600" : "text-green-600"}>
-                              {availableStock} {unit}
+                              {formatStockUnit(availableStock, ppb, isBox)}
                             </span>
                           )}
                         </td>
@@ -186,6 +187,7 @@ const CreateDeliveryDialog = ({ open, onClose, sale, dealerId }: Props) => {
                             type="number"
                             min={0}
                             max={maxDeliverable}
+                            step={isBox ? 0.01 : 1}
                             value={currentQty || ""}
                             onChange={(e) => {
                               const val = Math.min(Math.max(0, Number(e.target.value)), maxDeliverable);
@@ -194,6 +196,7 @@ const CreateDeliveryDialog = ({ open, onClose, sale, dealerId }: Props) => {
                             className="w-20 h-8 text-center mx-auto"
                             disabled={maxDeliverable <= 0}
                           />
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{unit}</div>
                         </td>
                       </tr>
                     );
