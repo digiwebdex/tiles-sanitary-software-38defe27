@@ -1986,6 +1986,8 @@ function ProfitAnalysisReport({ dealerId }: { dealerId: string }) {
         name: string;
         brand: string;
         category: string;
+        unitType?: string;
+        piecesPerBox?: number;
         qtySold: number;
         totalSft: number;
         avgCost: number;
@@ -2115,7 +2117,7 @@ function ProfitAnalysisReport({ dealerId }: { dealerId: string }) {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">{r.brand}</TableCell>
-                        <TableCell className="text-right">{r.qtySold}</TableCell>
+                        <TableCell className="text-right">{formatStockUnit(r.qtySold, r.piecesPerBox ?? 1, r.category === "tiles")}</TableCell>
                         <TableCell className="text-right text-muted-foreground">৳{r.avgCost.toLocaleString()}</TableCell>
                         <TableCell className="text-right">৳{r.avgSaleRate.toLocaleString()}</TableCell>
                         <TableCell className="text-right font-medium">৳{r.revenue.toLocaleString()}</TableCell>
