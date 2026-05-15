@@ -599,8 +599,8 @@ const ProductList = ({ dealerId }: ProductListProps) => {
                       <TableCell className="text-right">{formatCurrency(p.default_sale_rate)}</TableCell>
                       <TableCell className={`text-right font-medium ${qty < 0 ? "text-destructive" : ""}`}>
                         <TileStockBadge
-                          totalPieces={stockInfo.totalPieces || (p.unit_type === "box_sft" ? stockInfo.box * (Number(p.pieces_per_box) || 1) : stockInfo.piece)}
-                          piecesPerBox={Number(p.pieces_per_box) || 1}
+                          totalPieces={stockInfo.totalPieces || (p.unit_type === "box_sft" ? stockInfo.box * (Number((p as any).pieces_per_box) || 1) : stockInfo.piece)}
+                          piecesPerBox={Number((p as any).pieces_per_box) || 1}
                           perBoxSft={Number(p.per_box_sft) || 0}
                           isTile={p.unit_type === "box_sft"}
                           className="items-end"
