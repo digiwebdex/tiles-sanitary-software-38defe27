@@ -1099,6 +1099,12 @@ router.put('/:id', async (req: Request, res: Response) => {
         const deductQty = item.quantity;
         if (deductQty <= 0) continue;
 
+        const stockBeforeRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: item.product_id })
+          .forUpdate()
+          .first('total_pieces');
+        const stockBeforePieces = Number(stockBeforeRow?.total_pieces ?? 0);
+
         const batches = await trx('product_batches')
           .where({ dealer_id: dealerId, product_id: item.product_id, status: 'active' })
           .orderBy('created_at', 'asc')
