@@ -407,21 +407,93 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                         <FormField
                           control={form.control}
                           name={`items.${idx}.quantity`}
-                          render={({ field: f }) => (
-                            <FormItem className="space-y-1 min-w-[180px]">
-                              <FormLabel className="text-xs">Qty (Box/Pc)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  className="h-10 text-base min-w-[160px]"
-                                  style={{ flexShrink: 0 }}
-                                  {...f}
-                                />
-                              </FormControl>
-                              <div className="text-[10px] text-muted-foreground">e.g. 10 = 10 Box • 0.5 = 0 Box 50% Pc</div>
-                            </FormItem>
-                          )}
+                          render={({ field: f }) => {
+                            const isTile =
+                              product?.unit_type === "box_sft" && !!product?.per_box_sft;
+                            const ppb = Number(product?.pieces_per_box ?? 1) || 1;
+                            const perBoxSft = Number(product?.per_box_sft ?? 0) || 0;
+                            const rowKey = field.id;
+                            const mode = isTile ? entryModes[rowKey] ?? "box" : "box";
+                            const boxQty = Number(f.value) || 0;
+                            const totalPcs = Math.round(boxQty * ppb);
+                            const totalSftPreview = boxQty * perBoxSft;
+
+                            return (
+                              <FormItem className="space-y-1 min-w-[180px]">
+                                <div className="flex items-center justify-between gap-2">
+                                  <FormLabel className="text-xs">
+                                    {isTile
+                                      ? mode === "sft"
+                                        ? "Qty (SFT)"
+                                        : "Qty (Box)"
+                                      : "Qty (Pc)"}
+                                  </FormLabel>
+                                  {isTile && (
+                                    <ToggleGroup
+                                      type="single"
+                                      size="sm"
+                                      value={mode}
+                                      onValueChange={(v) => {
+                                        if (!v) return;
+                                        setEntryModes((prev) => ({ ...prev, [rowKey]: v as "box" | "sft" }));
+                                      }}
+                                      className="h-6"
+                                    >
+                                      <ToggleGroupItem value="box" className="h-6 px-2 text-[10px]">
+                                        Box
+                                      </ToggleGroupItem>
+                                      <ToggleGroupItem value="sft" className="h-6 px-2 text-[10px]">
+                                        SFT
+                                      </ToggleGroupItem>
+                                    </ToggleGroup>
+                                  )}
+                                </div>
+                                <FormControl>
+                                  {isTile && mode === "sft" ? (
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      className="h-10 text-base min-w-[160px]"
+                                      style={{ flexShrink: 0 }}
+                                      placeholder="e.g. 200"
+                                      value={sftInputs[rowKey] ?? ""}
+                                      onChange={(e) => {
+                                        const raw = e.target.value;
+                                        setSftInputs((prev) => ({ ...prev, [rowKey]: raw }));
+                                        const sft = Number(raw) || 0;
+                                        const boxes = ceilBoxesFromSft(sft, perBoxSft);
+                                        f.onChange(boxes);
+                                      }}
+                                    />
+                                  ) : (
+                                    <Input
+                                      type="number"
+                                      step={isTile ? "1" : "0.01"}
+                                      className="h-10 text-base min-w-[160px]"
+                                      style={{ flexShrink: 0 }}
+                                      {...f}
+                                    />
+                                  )}
+                                </FormControl>
+                                {isTile ? (
+                                  <div className="text-[10px] text-muted-foreground leading-tight">
+                                    {mode === "sft" ? (
+                                      <>
+                                        = <strong className="text-foreground">{boxQty} Box</strong> = {totalPcs} Pc = {totalSftPreview.toFixed(2)} SFT
+                                        <div className="text-[9px]">Auto-rounded to next full box</div>
+                                      </>
+                                    ) : (
+                                      <>
+                                        = <strong className="text-foreground">{totalPcs} Pc</strong> = {totalSftPreview.toFixed(2)} SFT
+                                      </>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-muted-foreground">Pieces</div>
+                                )}
+                              </FormItem>
+                            );
+                          }}
                         />
                         <FormField
                           control={form.control}
