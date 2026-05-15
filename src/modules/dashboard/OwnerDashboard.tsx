@@ -24,6 +24,7 @@ import {
   Send, PackageCheck,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
 import { ReservationDashboardWidgets } from "./ReservationDashboardWidgets";
