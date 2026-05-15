@@ -915,7 +915,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       db('products')
         .whereIn('id', productIds)
         .andWhere({ dealer_id: dealerId })
-        .select('id', 'unit_type', 'per_box_sft'),
+        .select('id', 'unit_type', 'per_box_sft', 'pieces_per_box'),
       db('stock')
         .where({ dealer_id: dealerId })
         .whereIn('product_id', productIds)
@@ -935,20 +935,49 @@ router.put('/:id', async (req: Request, res: Response) => {
       const stock: any = stockMap.get(item.product_id);
       const avgCost = stock ? Number(stock.average_cost_per_unit) : 0;
       const unitType = (product?.unit_type ?? 'piece') as 'box_sft' | 'piece';
-      const perBoxSft = product?.per_box_sft ?? 0;
+      const perBoxSft = Number(product?.per_box_sft ?? 0);
+      const ppb = Math.max(1, Math.floor(Number(product?.pieces_per_box ?? 1)) || 1);
+
+      let boxQty: number;
+      let pieceQty: number;
+      if (item.box_qty != null || item.piece_qty != null) {
+        boxQty = Number(item.box_qty ?? 0);
+        pieceQty = Number(item.piece_qty ?? 0);
+      } else if (unitType === 'box_sft') {
+        boxQty = Math.floor(item.quantity);
+        pieceQty = Math.round((item.quantity - boxQty) * ppb);
+      } else {
+        boxQty = 0;
+        pieceQty = item.quantity;
+      }
+      const totalPiecesItem = boxQty * ppb + pieceQty;
+      const effectiveQty =
+        unitType === 'box_sft' ? boxQty + pieceQty / ppb : pieceQty || item.quantity;
+
       let itemTotal: number;
       let itemSft: number | null = null;
       if (unitType === 'box_sft') {
-        totalBox += item.quantity;
-        itemSft = item.quantity * perBoxSft;
+        totalBox += effectiveQty;
+        itemSft = effectiveQty * perBoxSft;
         totalSft += itemSft;
         itemTotal = itemSft * item.sale_rate;
       } else {
-        totalPiece += item.quantity;
-        itemTotal = item.quantity * item.sale_rate;
+        totalPiece += effectiveQty;
+        itemTotal = effectiveQty * item.sale_rate;
       }
-      totalCogs += item.quantity * avgCost;
-      return { ...item, unitType, perBoxSft, total: itemTotal, total_sft: itemSft };
+      totalCogs += effectiveQty * avgCost;
+      return {
+        ...item,
+        quantity: effectiveQty,
+        box_qty: boxQty,
+        piece_qty: pieceQty,
+        total_pieces: totalPiecesItem,
+        pieces_per_box: ppb,
+        unitType,
+        perBoxSft,
+        total: itemTotal,
+        total_sft: itemSft,
+      };
     });
 
     const subtotal = itemsCalc.reduce((s, i) => s + i.total, 0);
