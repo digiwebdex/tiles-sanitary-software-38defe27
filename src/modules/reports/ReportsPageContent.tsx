@@ -842,11 +842,15 @@ function DetailedSalesReport({ dealerId }: { dealerId: string }) {
                         <TableCell className="text-xs max-w-[250px]">
                           {items.length > 0 ? (
                             <div className="space-y-0.5">
-                              {items.map((it, idx) => (
-                                <div key={idx} className="text-muted-foreground">
-                                  {it.name} ({it.qty})
-                                </div>
-                              ))}
+                              {items.map((it, idx) => {
+                                const isTile = it.unitType === "box_sft";
+                                const ppb = it.piecesPerBox || 1;
+                                return (
+                                  <div key={idx} className="text-muted-foreground">
+                                    {it.name} ({formatStockUnit(it.qty, ppb, isTile)})
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : "—"}
                         </TableCell>
