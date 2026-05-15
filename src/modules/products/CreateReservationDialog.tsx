@@ -120,8 +120,18 @@ const CreateReservationDialog = ({
     setCustomerId("");
     setBatchId("");
     setQty("");
+    setBoxQty("");
+    setPieceQty("");
     setReason("");
     setExpiryDays("7");
+  };
+
+  // Sync dual Box+Pc inputs to single qty (in boxes, fractional)
+  const syncDualQty = (b: string, p: string) => {
+    setBoxQty(b);
+    setPieceQty(p);
+    const total = (Number(b) || 0) + (Number(p) || 0) / ppb;
+    setQty(total > 0 ? String(total) : "");
   };
 
   return (
