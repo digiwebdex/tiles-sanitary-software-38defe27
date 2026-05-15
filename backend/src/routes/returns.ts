@@ -224,7 +224,9 @@ router.get('/sales/sale-items/:saleId', async (req: Request, res: Response) => {
           'name', p.name,
           'sku', p.sku,
           'unit_type', p.unit_type,
-          'per_box_sft', p.per_box_sft
+          'per_box_sft', p.per_box_sft,
+          'pieces_per_box', p.pieces_per_box,
+          'category', p.category
         ) as products`),
       );
     res.json(rows);
