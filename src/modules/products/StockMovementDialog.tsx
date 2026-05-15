@@ -110,7 +110,7 @@ const StockMovementDialog = ({
 
   const totalIn = allMovements.reduce((s, m) => s + m.qtyIn, 0);
   const totalOut = allMovements.reduce((s, m) => s + m.qtyOut, 0);
-  const qtyLabel = unitType === "box_sft" ? "Box" : "Pcs";
+  const lastBalance = movementsWithBalance.length > 0 ? movementsWithBalance[movementsWithBalance.length - 1].balance : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
