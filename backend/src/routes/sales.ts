@@ -1332,13 +1332,20 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     // ── Atomic transaction ──
     await db.transaction(async (trx) => {
-      // 1. Restore stock per item (batched via RPC + unbatched remainder)
+      // 1. Restore stock per item (batched via RPC + unbatched remainder) + ledger
       for (const it of items) {
         const prod: any = await trx('products')
           .where({ id: it.product_id })
-          .first('unit_type', 'per_box_sft');
+          .first('unit_type', 'per_box_sft', 'pieces_per_box');
         const unitType = (prod?.unit_type ?? 'piece') as 'box_sft' | 'piece';
-        const perBoxSft = prod?.per_box_sft ?? 0;
+        const perBoxSft = Number(prod?.per_box_sft ?? 0);
+        const ppb = Math.max(1, Math.floor(Number(prod?.pieces_per_box ?? 1)) || 1);
+
+        const stockBeforeRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: it.product_id })
+          .forUpdate()
+          .first('total_pieces');
+        const stockBeforePieces = Number(stockBeforeRow?.total_pieces ?? 0);
 
         const batchAllocs = await trx('sale_item_batches')
           .where({ sale_item_id: it.id })
@@ -1359,10 +1366,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
         );
         const unbatchedQty = deductedQty - batchAllocated;
         if (unbatchedQty > 0) {
+          const restorePieces = unitType === 'box_sft' ? unbatchedQty * ppb : unbatchedQty;
           if (unitType === 'box_sft') {
             const stockRow = await trx('stock')
               .where({ product_id: it.product_id, dealer_id: dealerId })
-              .forUpdate()
               .first();
             if (stockRow) {
               const newBox = Number(stockRow.box_qty) + unbatchedQty;
@@ -1370,15 +1377,39 @@ router.delete('/:id', async (req: Request, res: Response) => {
                 .where({ id: stockRow.id })
                 .update({
                   box_qty: newBox,
-                  sft_qty: newBox * (perBoxSft ?? 0),
+                  sft_qty: newBox * perBoxSft,
+                  total_pieces: Number(stockRow.total_pieces ?? 0) + restorePieces,
                 });
             }
           } else {
             await trx('stock')
               .where({ product_id: it.product_id, dealer_id: dealerId })
-              .increment('piece_qty', unbatchedQty);
+              .increment({ piece_qty: unbatchedQty, total_pieces: restorePieces });
           }
         }
+
+        // stock_ledger restore audit row (sale_cancel_in)
+        const stockAfterRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: it.product_id })
+          .first('total_pieces');
+        const stockAfterPieces = Number(stockAfterRow?.total_pieces ?? 0);
+        await trx('stock_ledger').insert({
+          dealer_id: dealerId,
+          product_id: it.product_id,
+          txn_type: 'sale_cancel_in',
+          reference_table: 'sales',
+          reference_id: saleId,
+          reference_no: sale.invoice_number,
+          box_qty: Number(it.box_qty ?? 0),
+          piece_qty: Number(it.piece_qty ?? 0),
+          pieces_per_box: ppb,
+          total_pieces: Number(it.total_pieces ?? Number(it.quantity) * ppb),
+          stock_before_pieces: stockBeforePieces,
+          stock_after_pieces: stockAfterPieces,
+          stock_before_display: formatBoxPiece(stockBeforePieces, ppb),
+          stock_after_display: formatBoxPiece(stockAfterPieces, ppb),
+          created_by: userId,
+        });
       }
 
       // 2. Delete backorder allocations
