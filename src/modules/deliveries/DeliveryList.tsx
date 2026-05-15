@@ -167,7 +167,17 @@ const DeliveryList = ({ dealerId }: DeliveryListProps) => {
                   const phone = d.receiver_phone || customer?.phone;
                   const deliveryItemsList = (d as any)?.delivery_items ?? [];
                   const itemCount = deliveryItemsList.length;
-                  const totalQty = deliveryItemsList.reduce((sum: number, di: any) => sum + Number(di.quantity), 0);
+                  // Aggregate box-equivalents (tile) and piece counts separately for a clean label.
+                  let boxSum = 0;
+                  let pieceSum = 0;
+                  for (const di of deliveryItemsList) {
+                    const isBox = di?.products?.unit_type === "box_sft";
+                    const q = Number(di.quantity) || 0;
+                    if (isBox) boxSum += q; else pieceSum += q;
+                  }
+                  const summaryParts: string[] = [];
+                  if (boxSum > 0) summaryParts.push(`${boxSum.toFixed(boxSum % 1 ? 2 : 0)} box`);
+                  if (pieceSum > 0) summaryParts.push(`${Math.round(pieceSum)} pcs`);
 
                   return (
                     <TableRow key={d.id} className="cursor-pointer" onClick={() => setDetailId(d.id)}>
@@ -183,7 +193,9 @@ const DeliveryList = ({ dealerId }: DeliveryListProps) => {
                       <TableCell>{customer?.name ?? d.receiver_name ?? "—"}</TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[200px]">
                         {itemCount > 0 ? (
-                          <span className="font-medium text-foreground">{itemCount} items, {totalQty} units</span>
+                          <span className="font-medium text-foreground">
+                            {itemCount} items{summaryParts.length ? ` · ${summaryParts.join(" + ")}` : ""}
+                          </span>
                         ) : (
                           <>
                             <p>{address}</p>
