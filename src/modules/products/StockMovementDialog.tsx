@@ -203,25 +203,23 @@ const StockMovementDialog = ({
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{m.reference}</TableCell>
                       <TableCell className="text-right text-sm font-medium text-green-600">
-                        {m.qtyIn > 0 ? `+${m.qtyIn}` : ""}
+                        {m.qtyIn > 0 ? `+${fmt(m.qtyIn)}` : ""}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium text-destructive">
-                        {m.qtyOut > 0 ? `-${m.qtyOut}` : ""}
+                        {m.qtyOut > 0 ? `-${fmt(m.qtyOut)}` : ""}
                       </TableCell>
                       <TableCell className={cn("text-right text-sm font-semibold", m.balance < 0 && "text-destructive")}>
-                        {m.balance}
+                        {m.balance < 0 ? `-${fmt(Math.abs(m.balance))}` : fmt(m.balance)}
                       </TableCell>
                     </TableRow>
                   ))}
                   {/* Totals */}
                   <TableRow className="bg-muted/50 font-semibold">
                     <TableCell colSpan={4} className="text-right">Totals:</TableCell>
-                    <TableCell className="text-right text-green-600">+{totalIn}</TableCell>
-                    <TableCell className="text-right text-destructive">-{totalOut}</TableCell>
+                    <TableCell className="text-right text-green-600">+{fmt(totalIn)}</TableCell>
+                    <TableCell className="text-right text-destructive">-{fmt(totalOut)}</TableCell>
                     <TableCell className="text-right">
-                      {movementsWithBalance.length > 0
-                        ? movementsWithBalance[movementsWithBalance.length - 1].balance
-                        : 0}
+                      {lastBalance < 0 ? `-${fmt(Math.abs(lastBalance))}` : fmt(lastBalance)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
