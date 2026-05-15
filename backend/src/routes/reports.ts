@@ -1360,6 +1360,9 @@ router.get('/stock-movement', async (req, res) => {
     return;
   }
   try {
+    const product = await db('products')
+      .where({ dealer_id: dealerId, id: productId })
+      .first('unit_type', 'pieces_per_box');
     const [purchaseItems, saleItems, returns] = await Promise.all([
       db('purchase_items as pi')
         .leftJoin('purchases as p', 'p.id', 'pi.purchase_id')
