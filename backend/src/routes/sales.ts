@@ -1302,7 +1302,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     const items = await db('sale_items')
       .where({ sale_id: saleId })
-      .select('id', 'product_id', 'quantity', 'available_qty_at_sale');
+      .select('id', 'product_id', 'quantity', 'available_qty_at_sale', 'box_qty', 'piece_qty', 'total_pieces');
 
     const challans = await db('challans')
       .where({ sale_id: saleId, dealer_id: dealerId })
