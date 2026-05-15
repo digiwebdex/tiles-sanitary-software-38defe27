@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Printer, X, MessageCircle } from "lucide-react";
 import SendWhatsAppDialog from "@/components/whatsapp/SendWhatsAppDialog";
 import { buildDeliveryUpdateMessage } from "@/services/whatsappService";
+import { formatStockUnit } from "@/lib/units";
 
 interface Props {
   deliveryId: string | null;
