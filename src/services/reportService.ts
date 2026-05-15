@@ -241,6 +241,8 @@ export interface LowStockRow {
   brand: string | null;
   category: string;
   unitType: string;
+  piecesPerBox?: number;
+  totalPieces?: number;
   currentStock: number;
   reorderLevel: number;
   suggestedReorderQty: number;
