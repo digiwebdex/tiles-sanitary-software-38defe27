@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import { formatCurrency } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { exportToExcel } from "@/lib/exportUtils";
 import { usePermissions } from "@/hooks/usePermissions";
 import Pagination from "@/components/Pagination";
