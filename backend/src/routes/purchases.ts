@@ -349,6 +349,7 @@ router.post('/', async (req: Request, res: Response) => {
               .update({
                 box_qty: newBox,
                 sft_qty: newBox * (x.perBoxSft ?? 0),
+                total_pieces: Number(existingBatch.total_pieces) + x.totalPieces,
                 status: 'active',
               });
           } else {
@@ -356,6 +357,7 @@ router.post('/', async (req: Request, res: Response) => {
               .where({ id: existingBatch.id })
               .update({
                 piece_qty: Number(existingBatch.piece_qty) + item.quantity,
+                total_pieces: Number(existingBatch.total_pieces) + x.totalPieces,
                 status: 'active',
               });
           }
@@ -371,6 +373,8 @@ router.post('/', async (req: Request, res: Response) => {
             box_qty: 0,
             piece_qty: 0,
             sft_qty: 0,
+            total_pieces: x.totalPieces,
+            pieces_per_box_snapshot: x.piecesPerBox,
             status: 'active',
           };
           if (x.unitType === 'box_sft') {
@@ -392,6 +396,9 @@ router.post('/', async (req: Request, res: Response) => {
           .forUpdate()
           .first();
 
+        const stockBeforePieces = stockRow ? Number(stockRow.total_pieces) || 0 : 0;
+        const stockAfterPieces = stockBeforePieces + x.totalPieces;
+
         if (!stockRow) {
           const newStock: any = {
             dealer_id: dealerId,
@@ -399,6 +406,7 @@ router.post('/', async (req: Request, res: Response) => {
             box_qty: 0,
             piece_qty: 0,
             sft_qty: 0,
+            total_pieces: x.totalPieces,
             average_cost_per_unit: 0,
           };
           if (x.unitType === 'box_sft') {
@@ -432,6 +440,7 @@ router.post('/', async (req: Request, res: Response) => {
               .update({
                 box_qty: newBox,
                 sft_qty: newBox * (x.perBoxSft ?? 0),
+                total_pieces: stockAfterPieces,
                 average_cost_per_unit: Math.round(newAvg * 100) / 100,
               });
           } else {
@@ -439,10 +448,30 @@ router.post('/', async (req: Request, res: Response) => {
               .where({ id: stockRow.id })
               .update({
                 piece_qty: Number(stockRow.piece_qty) + item.quantity,
+                total_pieces: stockAfterPieces,
                 average_cost_per_unit: Math.round(newAvg * 100) / 100,
               });
           }
         }
+
+        // ── stock_ledger audit row ──
+        await trx('stock_ledger').insert({
+          dealer_id: dealerId,
+          product_id: item.product_id,
+          txn_type: 'purchase_in',
+          reference_table: 'purchases',
+          reference_id: purchaseRowId,
+          reference_no: input.invoice_number?.trim() || null,
+          box_qty: x.boxQty,
+          piece_qty: x.pieceQty,
+          pieces_per_box: x.piecesPerBox,
+          total_pieces: x.totalPieces,
+          stock_before_pieces: stockBeforePieces,
+          stock_after_pieces: stockAfterPieces,
+          stock_before_display: formatBoxPiece(stockBeforePieces, x.piecesPerBox),
+          stock_after_display: formatBoxPiece(stockAfterPieces, x.piecesPerBox),
+          created_by: userId,
+        });
 
         allocationsToRun.push({
           productId: item.product_id,
