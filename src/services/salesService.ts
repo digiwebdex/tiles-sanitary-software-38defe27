@@ -46,6 +46,9 @@ async function fetchProductsByIds(
 export interface SaleItemInput {
   product_id: string;
   quantity: number;
+  /** Optional dual-unit fields (Box + Pc UI). Backend derives from `quantity` when absent. */
+  box_qty?: number;
+  piece_qty?: number;
   sale_rate: number;
   rate_source?: "default" | "tier" | "manual";
   tier_id?: string | null;
