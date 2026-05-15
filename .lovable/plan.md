@@ -1,90 +1,68 @@
-## Goal
+## 2B-ii — Backend writes total_pieces + stock_ledger (purchases path) + stock-display rollout
 
-Tiles ক্রয় ও বিক্রয় উভয়ের সময় ব্যবহারকারী **SFT, Box, অথবা Box + অতিরিক্ত Piece** — যেকোন এককে এন্ট্রি দিতে পারবেন। সফটওয়্যার সব হিসাব করে স্টক দেখাবে: **X Box Y Pcs (≈ Z SFT)**।
-
-এটি Phase 2B-এর tiles-নির্দিষ্ট সংস্করণ। শুধুমাত্র `category = Tiles` পণ্যের জন্য প্রযোজ্য; Sanitary পণ্য আগের মতই Pcs-এ চলবে।
+Goal: পেছনের অংশে purchase সেভ হলে এখন থেকে `total_pieces` সঠিকভাবে পপুলেট হবে, প্রতি stock-পরিবর্তনে `stock_ledger`-এ একটি audit row লেখা হবে, এবং UI-তে stock দেখানোর জায়গাগুলোতে নতুন `<TileStockBadge>` (Box + Pc + ≈SFT) ব্যবহার হবে। Sales/Returns/Reservations 2C-2D-তে।
 
 ---
 
-## Foundation (ইতিমধ্যে আছে)
+### A. Backend — `POST /api/purchases` (file: `backend/src/routes/purchases.ts`)
 
-- `products.per_box_sft` — প্রতি বক্সে কত SFT (legacy column, tiles-এ বাধ্যতামূলক)
-- `products.pieces_per_box` — প্রতি বক্সে কত pieces (Phase 1 / 2A)
-- `purchase_items / sale_items / batches / stock` — সবগুলোতে `box_qty`, `piece_qty`, `total_pieces` কলাম আছে
-- `dealers.dual_unit_enabled` toggle আছে
-- `src/lib/areaCalculator.ts`, `tileRounding.ts` — SFT ↔ Box converter আছে
+বর্তমান flow: header → items → batch upsert → stock upsert → backorder allocator। সব box-ভিত্তিক ছিল। পরিবর্তন:
 
-বাকি কাজ: form-এ unit selector, পেছনে total_pieces হিসাব, এবং stock display তিন এককে।
+1. **Item resolution stage** (যেখানে item.unit_type, perBoxSft লোড হয়) — সাথে `pieces_per_box` (default 1) লোড করব।
+2. প্রতি আইটেমে compute `totalPieces = item.quantity * piecesPerBox` (legacy `quantity` = boxes for tiles, = pieces for piece-units; backward-compatible)। `box_qty = item.quantity`, `piece_qty = 0` (frontend আজও partial pcs পাঠায় না)।
+3. `purchase_items` insert — `box_qty`, `piece_qty`, `total_pieces` কলামে লিখব (ইতিমধ্যেই migration দিয়েছে)।
+4. `product_batches` insert/update — নতুন rows-এ `total_pieces` ও `pieces_per_box_snapshot` সেট। existing batch update করলে `total_pieces += delta`।
+5. `stock` upsert — বিদ্যমান `box_qty`/`sft_qty`/`piece_qty` রাখব (regression-free), পাশাপাশি `total_pieces += delta` সেট।
+6. **stock_ledger insert** প্রতি item-এ:
+   - `txn_type='purchase_in'`
+   - `reference_table='purchases'`, `reference_id=purchase.id`, `reference_no=invoice_number`
+   - `box_qty`, `piece_qty=0`, `pieces_per_box`, `total_pieces`
+   - `stock_before_pieces` / `stock_after_pieces` (SELECT-FOR-UPDATE নেওয়ার সময় ধরা)
+   - `stock_before_display` / `stock_after_display` — `format_box_piece` সমতুল্য JS helper দিয়ে
+7. সব এক transaction-এর ভিতরে — current code ইতিমধ্যে `trx` ব্যবহার করছে।
 
----
+**Backward compat**: যেসব legacy ডিলারের `pieces_per_box=1`, total_pieces == box_qty — কোনো math নষ্ট হয় না। `dual_unit_enabled` toggle সরাসরি চেক করব না; কারণ `total_pieces` সবসময় সঠিক থাকা ভাল (ভবিষ্যৎ display layer এর জন্য)।
 
-## Plan
+### B. Frontend — service & types
 
-### Step 1 — Tiles Purchase Form (SFT ভিত্তিক এন্ট্রি)
+- `src/services/purchaseService.ts`: `PurchaseItemInput`-এ optional `box_qty`, `piece_qty`, `total_pieces` যোগ করব (পুরাতন `quantity` রেখে)। PurchaseForm এখনো শুধু `quantity` পাঠায় — backend resolve করে নেবে।
 
-`src/modules/purchases/PurchaseForm.tsx` — tiles row-এ একটি **Entry Mode** selector যোগ করা হবে:
+### C. UI — TileStockBadge প্রয়োগ (read-only sites)
 
-- **By SFT** — ব্যবহারকারী SFT লেখেন → auto round up করে boxes (next full box, `tileRounding.ts` দিয়ে) → `box_qty`, `piece_qty=0`, `total_pieces` হিসাব হয়
-- **By Box** — শুধু box সংখ্যা
-- **By Box + Pc** — box + আলাদা pieces (Phase 2A-র মতই)
+আজকের scope-এ যে surfaces:
+1. **Product list / detail page** stock cell — `src/pages/products/ProductList.tsx` (যা থাকে), `ProductDetailPage` যদি থাকে। Confirm by exploring।
+2. **Dashboard low-stock card** — current low-stock alerts component।
+3. **Stock adjust dialog summary** — `StockAdjustDialog` shows current stock।
+4. **Sale form availability hint** — touches sale form, deferred to 2C।
 
-Live preview দেখাবে: `5 Box = 111.10 SFT = 60 Pcs` (per_box_sft × box_qty)।
+Each consumer needs `total_pieces`, `pieces_per_box`, `per_box_sft`, `category`/`unit_type`। Stock GET endpoints already include these via products join; will verify and patch any missing fields.
 
-Rate field `৳/SFT` রাখা হবে (টাইলস ব্যবসার স্বাভাবিক ধরন)। Total = `final_sft × rate`।
+### D. Migration / DB
 
-Sanitary রো অপরিবর্তিত — শুধু Pcs।
+Migration 018 ইতিমধ্যেই deployed — কোন নতুন schema নেই। শুধু code-level পরিবর্তন।
 
-### Step 2 — Tiles Sale Form (একই তিন মোড)
+### E. Test
 
-`src/modules/sales/SaleForm.tsx` — গ্রাহক চাইলে SFT-এ, Box-এ, বা Box + কয়েক Pc আলাদা — এই তিন মোডে বিক্রি। SFT মোডে `tileRounding` দিয়ে box-এ গোল করা হবে কিন্তু "Sell loose pieces" চেক করলে pieces আলাদাভাবে অনুমোদিত (যেমন 5 Box + 3 Pc)।
+- Demo dealer-এ:
+  1. Tile product (per_box_sft=22.22, pieces_per_box=12) — purchase 5 box → expect: stock.total_pieces +60, batch.total_pieces=60, stock_ledger row with `before/after_display='X Box (≈ Y SFT)'`।
+  2. Sanitary product (pieces_per_box=1) — purchase 10 pcs → total_pieces +10।
+  3. Backorder allocator অপরিবর্তিত — কোনো outstanding sale on backorder থাকলে fulfill হবে যথাবৎ।
+- `bunx tsc --noEmit` ও backend `tsc` clean।
 
-POS সেলেও একই UX।
+### F. Rollout
 
-### Step 3 — Backend: total_pieces canonical
-
-Backend route ও service-এ ইতিমধ্যে `total_pieces` কলাম আছে কিন্তু পপুলেট হয় না। নিম্নলিখিতগুলোতে server-side compute যোগ করা হবে (frontend থেকে box_qty, piece_qty পাঠানো হবে; backend `pieces_per_box` lookup করে `total_pieces` লিখবে):
-
-- `POST /api/purchases` → `purchase_items` + `product_batches` + `stock` সব total_pieces-এ
-- `POST/PUT/DELETE /api/sales` → FIFO allocator total_pieces-এ
-- Returns, reservations, backorders — একই
-
-stock_ledger row প্রতিটি stock-পরিবর্তনে লেখা হবে (audit trail)।
-
-### Step 4 — Stock Display: Box + Pcs + SFT
-
-একটি reusable `<TileStockBadge total_pieces={..} pieces_per_box={..} per_box_sft={..} />` কম্পোনেন্ট:
-
-```
-12 Box 3 Pc  (≈ 268.89 SFT)
+```bash
+cd /var/www/tilessaas && git pull && cd backend && npm install && npm run build && pm2 restart tilessaas-backend && cd .. && npm install && npm run build
 ```
 
-প্রয়োগ হবে: Stock list, Product detail, Sale form availability, Purchase form current stock, Dashboard low-stock, Reports।
+---
 
-Sanitary product হলে শুধু `15 Pc` দেখাবে (SFT অংশ বাদ)।
+### Out of scope (পরবর্তী phase-এ)
 
-### Step 5 — Guardrails
-
-- Tile product save করার সময় `per_box_sft > 0` ও `pieces_per_box > 0` বাধ্যতামূলক
-- `dual_unit_enabled = false` ডিলারের জন্য পুরাতন single-quantity UI কাজ করতে থাকবে (regression-free)
-- Migration আগে থেকেই deployed; নতুন কোন schema change নেই
+- Sales POST/PUT/DELETE + FIFO RPC rewrite (2C)
+- Returns + reservations + backorder allocator total_pieces switch (2D)
+- SaleForm UI (Box + Pc + SFT) (2C)
 
 ---
 
-## Technical notes
-
-- Helper: `boxesToPieces(box, pc, ppb) = box*ppb + pc` and `piecesToSft(pieces, ppb, perBoxSft) = pieces / ppb * perBoxSft`
-- Rounding: `tileRounding.ts` already returns next-full-box for an SFT input
-- API contract change: clients send `{ box_qty, piece_qty, entry_mode, sft_input? }`; legacy `quantity` field still accepted for non-tile and non-dual-unit dealers (backward compat)
-- All FIFO RPCs (`allocate_sale_batches`, `restore_sale_batches`, `create_stock_reservation`) need rewrite to operate on `total_pieces` — this is the highest-risk piece, will be done in a transaction with full test on demo dealer first
-- Reports module touched: Stock report, Sales report — column changes only, math unchanged
-
----
-
-## Suggested execution order
-
-1. **2B-i** Step 1 + Step 4 (read-only) — Purchase by SFT + new stock display. Lowest risk, immediately useful.
-2. **2B-ii** Step 3 backend writes (purchases path) + stock_ledger.
-3. **2C** Step 2 + Step 3 sales path + FIFO RPC rewrite.
-4. **2D** Returns + reservations + backorders.
-
-প্রতিটি sub-step আলাদা approval নিয়ে করব। আজ শুরু করব **2B-i** দিয়ে?
+বলুন **"start 2B-ii"** — আমি ব্যাকএন্ড রুট আপডেট, stock_ledger writer helper, এবং stock display surfaces এক টার্নে শেষ করে দেব।
