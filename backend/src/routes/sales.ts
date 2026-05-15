@@ -606,6 +606,13 @@ router.post('/', async (req: Request, res: Response) => {
           const deductQty = Math.min(item.quantity, item.available_qty_at_sale);
           if (deductQty <= 0) continue;
 
+          // Capture stock_before for stock_ledger audit (locks row).
+          const stockBeforeRow = await trx('stock')
+            .where({ dealer_id: dealerId, product_id: item.product_id })
+            .forUpdate()
+            .first('total_pieces');
+          const stockBeforePieces = Number(stockBeforeRow?.total_pieces ?? 0);
+
           // Plan FIFO allocation honouring customer reservations
           const batches = await trx('product_batches')
             .where({ dealer_id: dealerId, product_id: item.product_id, status: 'active' })
