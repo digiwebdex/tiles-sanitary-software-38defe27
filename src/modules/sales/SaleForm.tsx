@@ -1020,42 +1020,124 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
                       />
                     </div>
 
-                    {/* Quantity */}
+                    {/* Quantity (Box + Pc for tiles, Pc only for sanitary) */}
                     <div className="col-span-2">
-                      <FormField
-                        control={form.control}
-                        name={`items.${idx}.quantity`}
-                        render={({ field: f }) => (
-                          <FormItem className="space-y-0">
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder={selectedProduct?.unit_type === "box_sft" ? "Box qty" : "Qty"}
-                                className="h-8 text-sm text-center"
-                                disabled={priceLocked}
-                                {...f}
-                                onBlur={(e) => {
-                                  // Tile auto-rounding: tiles are sold in whole boxes only.
-                                  if (selectedProduct?.unit_type === "box_sft") {
-                                    const v = Number(e.target.value);
-                                    if (Number.isFinite(v) && v > 0 && v !== Math.ceil(v)) {
-                                      f.onChange(Math.ceil(v));
-                                    }
-                                  }
-                                  f.onBlur();
-                                }}
-                              />
-                            </FormControl>
-                            {itemSft !== null && (
-                              <p className="text-[10px] text-muted-foreground text-center mt-0.5">
-                                {itemSft.toFixed(2)} Sft
-                              </p>
+                      {(() => {
+                        const ppb = Number(selectedProduct?.pieces_per_box ?? 0);
+                        const isTile = selectedProduct?.unit_type === "box_sft";
+                        const showDual = isTile && ppb > 0;
+                        const item = watchItems[idx];
+                        // Derive displayed box/pc: prefer explicit fields; else split from quantity.
+                        const qty = Number(item?.quantity ?? 0);
+                        const explicitBox = item?.box_qty;
+                        const explicitPc = item?.piece_qty;
+                        const dispBox = explicitBox != null && explicitBox !== undefined
+                          ? Number(explicitBox)
+                          : (showDual ? Math.floor(qty) : 0);
+                        const dispPc = explicitPc != null && explicitPc !== undefined
+                          ? Number(explicitPc)
+                          : (showDual ? Math.round((qty - Math.floor(qty)) * ppb) : (isTile ? 0 : qty));
+
+                        const syncQuantity = (boxV: number, pcV: number) => {
+                          const safeBox = Number.isFinite(boxV) ? Math.max(0, boxV) : 0;
+                          const safePc = Number.isFinite(pcV) ? Math.max(0, pcV) : 0;
+                          form.setValue(`items.${idx}.box_qty`, safeBox, { shouldDirty: true });
+                          form.setValue(`items.${idx}.piece_qty`, safePc, { shouldDirty: true });
+                          if (showDual) {
+                            form.setValue(`items.${idx}.quantity`, safeBox + safePc / ppb, { shouldDirty: true, shouldValidate: true });
+                          } else if (isTile) {
+                            // Tile without ppb: legacy box-only
+                            form.setValue(`items.${idx}.quantity`, safeBox, { shouldDirty: true, shouldValidate: true });
+                          } else {
+                            // Sanitary: pc-only
+                            form.setValue(`items.${idx}.quantity`, safePc, { shouldDirty: true, shouldValidate: true });
+                          }
+                        };
+
+                        if (showDual) {
+                          return (
+                            <FormItem className="space-y-0">
+                              <div className="flex gap-1">
+                                <Input
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  placeholder="Box"
+                                  className="h-8 text-sm text-center px-1"
+                                  disabled={priceLocked}
+                                  value={dispBox || ""}
+                                  onChange={(e) => syncQuantity(Math.floor(Number(e.target.value) || 0), dispPc)}
+                                />
+                                <Input
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  placeholder="Pc"
+                                  className="h-8 text-sm text-center px-1"
+                                  disabled={priceLocked}
+                                  value={dispPc || ""}
+                                  onChange={(e) => syncQuantity(dispBox, Math.floor(Number(e.target.value) || 0))}
+                                />
+                              </div>
+                              {itemSft !== null && (
+                                <p className="text-[10px] text-muted-foreground text-center mt-0.5">
+                                  {itemSft.toFixed(2)} Sft · {dispBox} box {dispPc} pc
+                                </p>
+                              )}
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }
+
+                        // Sanitary (pc-only) or tile without ppb fallback to single input
+                        return (
+                          <FormField
+                            control={form.control}
+                            name={`items.${idx}.quantity`}
+                            render={({ field: f }) => (
+                              <FormItem className="space-y-0">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder={isTile ? "Box qty" : "Qty"}
+                                    className="h-8 text-sm text-center"
+                                    disabled={priceLocked}
+                                    {...f}
+                                    onChange={(e) => {
+                                      const v = Number(e.target.value) || 0;
+                                      f.onChange(e);
+                                      if (isTile) {
+                                        form.setValue(`items.${idx}.box_qty`, v);
+                                        form.setValue(`items.${idx}.piece_qty`, 0);
+                                      } else {
+                                        form.setValue(`items.${idx}.box_qty`, 0);
+                                        form.setValue(`items.${idx}.piece_qty`, v);
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      if (isTile) {
+                                        const v = Number(e.target.value);
+                                        if (Number.isFinite(v) && v > 0 && v !== Math.ceil(v)) {
+                                          f.onChange(Math.ceil(v));
+                                          form.setValue(`items.${idx}.box_qty`, Math.ceil(v));
+                                        }
+                                      }
+                                      f.onBlur();
+                                    }}
+                                  />
+                                </FormControl>
+                                {itemSft !== null && (
+                                  <p className="text-[10px] text-muted-foreground text-center mt-0.5">
+                                    {itemSft.toFixed(2)} Sft
+                                  </p>
+                                )}
+                                <FormMessage />
+                              </FormItem>
                             )}
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          />
+                        );
+                      })()}
                     </div>
 
                     {/* Unit Price */}
