@@ -202,8 +202,9 @@ const DeliveryDetailDialog = ({ deliveryId, dealerId, onClose }: Props) => {
                   {displayItems.map((item: any, idx: number) => {
                     const product = item.products;
                     const isBox = product?.unit_type === "box_sft";
+                    const ppb = Number(product?.pieces_per_box) || 1;
                     const qty = Number(item.quantity);
-                    const boxPcs = isBox ? `${qty} box` : `${qty} pc`;
+                    const boxPcs = formatStockUnit(qty, ppb, isBox);
                     const itemBatches = batchesByItem[item.id] ?? [];
 
                     return (
