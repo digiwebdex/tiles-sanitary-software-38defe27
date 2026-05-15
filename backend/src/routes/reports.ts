@@ -685,7 +685,7 @@ router.get('/inventory-aging', async (req, res) => {
       db('products')
         .where({ dealer_id: dealerId, active: true })
         .orderBy('sku')
-        .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'per_box_sft', 'reorder_level'),
+        .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'per_box_sft', 'pieces_per_box', 'reorder_level'),
       db('stock')
         .where({ dealer_id: dealerId })
         .select('product_id', 'box_qty', 'sft_qty', 'piece_qty', 'average_cost_per_unit'),
