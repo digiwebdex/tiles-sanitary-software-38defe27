@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { cn, formatCurrency } from "@/lib/utils";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
+import { formatStockUnit } from "@/lib/units";
 import { CalendarIcon } from "lucide-react";
 
 interface StockMovementDialogProps {
@@ -24,6 +25,7 @@ interface StockMovementDialogProps {
   productName: string;
   dealerId: string;
   unitType: string;
+  piecesPerBox?: number;
 }
 
 type MovementEntry = {
@@ -53,8 +55,11 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const StockMovementDialog = ({
-  open, onOpenChange, productId, productName, dealerId, unitType,
+  open, onOpenChange, productId, productName, dealerId, unitType, piecesPerBox = 1,
 }: StockMovementDialogProps) => {
+  const isTile = unitType === "box_sft";
+  const ppb = piecesPerBox || 1;
+  const fmt = (q: number) => formatStockUnit(q, ppb, isTile);
   const [fromDate, setFromDate] = useState<Date>(startOfMonth(new Date()));
   const [toDate, setToDate] = useState<Date>(new Date());
 
@@ -105,7 +110,7 @@ const StockMovementDialog = ({
 
   const totalIn = allMovements.reduce((s, m) => s + m.qtyIn, 0);
   const totalOut = allMovements.reduce((s, m) => s + m.qtyOut, 0);
-  const qtyLabel = unitType === "box_sft" ? "Box" : "Pcs";
+  const lastBalance = movementsWithBalance.length > 0 ? movementsWithBalance[movementsWithBalance.length - 1].balance : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,8 +182,8 @@ const StockMovementDialog = ({
                     <TableHead>Type</TableHead>
                     <TableHead>Party / Reason</TableHead>
                     <TableHead>Ref</TableHead>
-                    <TableHead className="text-right">In ({qtyLabel})</TableHead>
-                    <TableHead className="text-right">Out ({qtyLabel})</TableHead>
+                    <TableHead className="text-right">In</TableHead>
+                    <TableHead className="text-right">Out</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -198,25 +203,23 @@ const StockMovementDialog = ({
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{m.reference}</TableCell>
                       <TableCell className="text-right text-sm font-medium text-green-600">
-                        {m.qtyIn > 0 ? `+${m.qtyIn}` : ""}
+                        {m.qtyIn > 0 ? `+${fmt(m.qtyIn)}` : ""}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium text-destructive">
-                        {m.qtyOut > 0 ? `-${m.qtyOut}` : ""}
+                        {m.qtyOut > 0 ? `-${fmt(m.qtyOut)}` : ""}
                       </TableCell>
                       <TableCell className={cn("text-right text-sm font-semibold", m.balance < 0 && "text-destructive")}>
-                        {m.balance}
+                        {m.balance < 0 ? `-${fmt(Math.abs(m.balance))}` : fmt(m.balance)}
                       </TableCell>
                     </TableRow>
                   ))}
                   {/* Totals */}
                   <TableRow className="bg-muted/50 font-semibold">
                     <TableCell colSpan={4} className="text-right">Totals:</TableCell>
-                    <TableCell className="text-right text-green-600">+{totalIn}</TableCell>
-                    <TableCell className="text-right text-destructive">-{totalOut}</TableCell>
+                    <TableCell className="text-right text-green-600">+{fmt(totalIn)}</TableCell>
+                    <TableCell className="text-right text-destructive">-{fmt(totalOut)}</TableCell>
                     <TableCell className="text-right">
-                      {movementsWithBalance.length > 0
-                        ? movementsWithBalance[movementsWithBalance.length - 1].balance
-                        : 0}
+                      {lastBalance < 0 ? `-${fmt(Math.abs(lastBalance))}` : fmt(lastBalance)}
                     </TableCell>
                   </TableRow>
                 </TableBody>

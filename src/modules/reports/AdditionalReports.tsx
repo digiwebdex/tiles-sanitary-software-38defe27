@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import { formatCurrency } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { exportToExcel } from "@/lib/exportUtils";
 import { usePermissions } from "@/hooks/usePermissions";
 import Pagination from "@/components/Pagination";
@@ -412,7 +413,7 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["report-stock-movement", dealerId, productId, page],
     queryFn: async () => {
-      if (!productId) return { rows: [], total: 0, allRows: [] as any[] };
+      if (!productId) return { rows: [], total: 0, allRows: [] as any[], unitType: "piece", piecesPerBox: 1 };
       const res = await vpsAuthedFetch(
         `/api/reports/stock-movement?dealerId=${dealerId}&productId=${productId}`,
       );
@@ -424,12 +425,21 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
       }>;
       const total = allRows.length;
       const paged = allRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-      return { rows: paged, total, allRows };
+      return {
+        rows: paged,
+        total,
+        allRows,
+        unitType: body.unitType ?? "piece",
+        piecesPerBox: Number(body.piecesPerBox) || 1,
+      };
     },
     enabled: !!productId,
   });
 
   const rows = data?.rows ?? [];
+  const isTile = (data?.unitType ?? "piece") === "box_sft";
+  const ppb = data?.piecesPerBox || 1;
+  const fmt = (q: number) => formatStockUnit(q, ppb, isTile);
 
   return (
     <Card>
@@ -443,14 +453,23 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
             </SelectContent>
           </Select>
           {canExportReports && (data?.allRows?.length ?? 0) > 0 && (
-            <Button size="sm" variant="outline" onClick={() => exportToExcel(data!.allRows!, [
-              { header: "Date", key: "date" },
-              { header: "Type", key: "type" },
-              { header: "Reference", key: "reference" },
-              { header: "Qty In", key: "qtyIn", format: "number" },
-              { header: "Qty Out", key: "qtyOut", format: "number" },
-              { header: "Balance", key: "balance", format: "number" },
-            ], "stock-movement")}>
+            <Button size="sm" variant="outline" onClick={() => exportToExcel(
+              data!.allRows!.map((r: any) => ({
+                ...r,
+                qtyIn: r.qtyIn > 0 ? fmt(r.qtyIn) : "",
+                qtyOut: r.qtyOut > 0 ? fmt(r.qtyOut) : "",
+                balance: r.balance < 0 ? `-${fmt(Math.abs(r.balance))}` : fmt(r.balance),
+              })),
+              [
+                { header: "Date", key: "date" },
+                { header: "Type", key: "type" },
+                { header: "Reference", key: "reference" },
+                { header: "Qty In", key: "qtyIn" },
+                { header: "Qty Out", key: "qtyOut" },
+                { header: "Balance", key: "balance" },
+              ],
+              "stock-movement",
+            )}>
               <Download className="h-4 w-4 mr-1" /> Export
             </Button>
           )}
@@ -485,9 +504,9 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
                         <Badge variant={r.type === "Purchase" ? "secondary" : r.type === "Sale" ? "default" : "outline"} className="text-xs">{r.type}</Badge>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{r.reference}</TableCell>
-                      <TableCell className="text-right text-primary font-medium">{r.qtyIn > 0 ? `+${r.qtyIn}` : "—"}</TableCell>
-                      <TableCell className="text-right text-destructive font-medium">{r.qtyOut > 0 ? `-${r.qtyOut}` : "—"}</TableCell>
-                      <TableCell className="text-right font-semibold">{(r as any).balance}</TableCell>
+                      <TableCell className="text-right text-primary font-medium">{r.qtyIn > 0 ? `+${fmt(r.qtyIn)}` : "—"}</TableCell>
+                      <TableCell className="text-right text-destructive font-medium">{r.qtyOut > 0 ? `-${fmt(r.qtyOut)}` : "—"}</TableCell>
+                      <TableCell className="text-right font-semibold">{(r as any).balance < 0 ? `-${fmt(Math.abs((r as any).balance))}` : fmt((r as any).balance)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
