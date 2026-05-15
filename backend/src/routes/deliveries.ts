@@ -698,6 +698,7 @@ router.get('/:id', async (req: Request, res: Response) => {
           'p.sku as product_sku',
           'p.unit_type as product_unit_type',
           'p.per_box_sft as product_per_box_sft',
+          'p.pieces_per_box as product_ppb',
         ),
       delivery.sale_id
         ? db('sale_items as si')
@@ -709,12 +710,13 @@ router.get('/:id', async (req: Request, res: Response) => {
               'p.sku as product_sku',
               'p.unit_type as product_unit_type',
               'p.per_box_sft as product_per_box_sft',
+              'p.pieces_per_box as product_ppb',
             )
         : Promise.resolve([]),
     ]);
 
     const mapItem = (it: any) => {
-      const { product_name, product_sku, product_unit_type, product_per_box_sft, ...rest } = it;
+      const { product_name, product_sku, product_unit_type, product_per_box_sft, product_ppb, ...rest } = it;
       return {
         ...rest,
         products: {
@@ -722,6 +724,7 @@ router.get('/:id', async (req: Request, res: Response) => {
           sku: product_sku,
           unit_type: product_unit_type,
           per_box_sft: product_per_box_sft,
+          pieces_per_box: Number(product_ppb) || 1,
         },
       };
     };
