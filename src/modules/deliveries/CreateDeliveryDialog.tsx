@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Truck, Package, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { formatStockUnit } from "@/lib/units";
 
 interface Props {
   open: boolean;
