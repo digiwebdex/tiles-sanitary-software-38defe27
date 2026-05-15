@@ -453,14 +453,23 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
             </SelectContent>
           </Select>
           {canExportReports && (data?.allRows?.length ?? 0) > 0 && (
-            <Button size="sm" variant="outline" onClick={() => exportToExcel(data!.allRows!, [
-              { header: "Date", key: "date" },
-              { header: "Type", key: "type" },
-              { header: "Reference", key: "reference" },
-              { header: "Qty In", key: "qtyIn", format: "number" },
-              { header: "Qty Out", key: "qtyOut", format: "number" },
-              { header: "Balance", key: "balance", format: "number" },
-            ], "stock-movement")}>
+            <Button size="sm" variant="outline" onClick={() => exportToExcel(
+              data!.allRows!.map((r: any) => ({
+                ...r,
+                qtyIn: r.qtyIn > 0 ? fmt(r.qtyIn) : "",
+                qtyOut: r.qtyOut > 0 ? fmt(r.qtyOut) : "",
+                balance: r.balance < 0 ? `-${fmt(Math.abs(r.balance))}` : fmt(r.balance),
+              })),
+              [
+                { header: "Date", key: "date" },
+                { header: "Type", key: "type" },
+                { header: "Reference", key: "reference" },
+                { header: "Qty In", key: "qtyIn" },
+                { header: "Qty Out", key: "qtyOut" },
+                { header: "Balance", key: "balance" },
+              ],
+              "stock-movement",
+            )}>
               <Download className="h-4 w-4 mr-1" /> Export
             </Button>
           )}
