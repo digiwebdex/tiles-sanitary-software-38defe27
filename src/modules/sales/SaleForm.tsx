@@ -919,7 +919,7 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ product_id: "", quantity: 0, sale_rate: 0 })}
+                onClick={() => append({ product_id: "", quantity: 0, box_qty: 0, piece_qty: 0, sale_rate: 0 })}
                 disabled={priceLocked}
               >
                 <Plus className="mr-1 h-3.5 w-3.5" /> Add Item
