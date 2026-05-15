@@ -782,7 +782,7 @@ function DetailedSalesReport({ dealerId }: { dealerId: string }) {
       return {
         sales: body.sales ?? [],
         total: body.total ?? 0,
-        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number }[]>,
+        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number; unitType?: string; piecesPerBox?: number }[]>,
       };
     },
   });
@@ -842,11 +842,15 @@ function DetailedSalesReport({ dealerId }: { dealerId: string }) {
                         <TableCell className="text-xs max-w-[250px]">
                           {items.length > 0 ? (
                             <div className="space-y-0.5">
-                              {items.map((it, idx) => (
-                                <div key={idx} className="text-muted-foreground">
-                                  {it.name} ({it.qty})
-                                </div>
-                              ))}
+                              {items.map((it, idx) => {
+                                const isTile = it.unitType === "box_sft";
+                                const ppb = it.piecesPerBox || 1;
+                                return (
+                                  <div key={idx} className="text-muted-foreground">
+                                    {it.name} ({formatStockUnit(it.qty, ppb, isTile)})
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : "—"}
                         </TableCell>
@@ -1619,7 +1623,7 @@ function PurchasesReport({ dealerId }: { dealerId: string }) {
       return {
         purchases: body.purchases ?? [],
         total: body.total ?? 0,
-        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number }[]>,
+        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number; unitType?: string; piecesPerBox?: number }[]>,
         paidMap: (body.paidMap ?? {}) as Record<string, number>,
       };
     },
@@ -1675,11 +1679,15 @@ function PurchasesReport({ dealerId }: { dealerId: string }) {
                         <TableCell className="text-xs max-w-[280px]">
                           {items.length > 0 ? (
                             <div className="space-y-0.5">
-                              {items.map((it, idx) => (
-                                <div key={idx} className="text-muted-foreground">
-                                  {it.name} ({it.qty})
-                                </div>
-                              ))}
+                              {items.map((it, idx) => {
+                                const isTile = it.unitType === "box_sft";
+                                const ppb = it.piecesPerBox || 1;
+                                return (
+                                  <div key={idx} className="text-muted-foreground">
+                                    {it.name} ({formatStockUnit(it.qty, ppb, isTile)})
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : "—"}
                         </TableCell>
