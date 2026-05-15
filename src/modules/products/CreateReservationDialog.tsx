@@ -26,6 +26,7 @@ interface CreateReservationDialogProps {
     unit_type: string;
     category: string;
     per_box_sft: number | null;
+    pieces_per_box?: number | null;
   };
   dealerId: string;
 }
@@ -38,11 +39,15 @@ const CreateReservationDialog = ({
   const [customerId, setCustomerId] = useState("");
   const [batchId, setBatchId] = useState<string>("");
   const [qty, setQty] = useState("");
+  const [boxQty, setBoxQty] = useState("");
+  const [pieceQty, setPieceQty] = useState("");
   const [reason, setReason] = useState("");
   const [expiryDays, setExpiryDays] = useState("7");
 
   const isTiles = product.category === "tiles";
   const unitLabel = product.unit_type === "box_sft" ? "Box" : "Pcs";
+  const ppb = Math.max(1, Number(product.pieces_per_box ?? 1));
+  const useDual = product.unit_type === "box_sft";
 
   // Phase 3U-30: VPS GET /api/customers (active only).
   const { data: customers = [] } = useQuery({
