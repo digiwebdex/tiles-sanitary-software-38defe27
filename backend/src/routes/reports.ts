@@ -2252,7 +2252,7 @@ router.get('/page/purchases', async (req, res) => {
       );
 
     const purchaseIds = (purchases as any[]).map((p) => p.id);
-    const itemsMap: Record<string, { name: string; qty: number }[]> = {};
+    const itemsMap: Record<string, { name: string; qty: number; unitType: string; piecesPerBox: number }[]> = {};
     const paidMap: Record<string, number> = {};
 
     if (purchaseIds.length > 0) {
@@ -2263,6 +2263,7 @@ router.get('/page/purchases', async (req, res) => {
           'pi.purchase_id', 'pi.quantity',
           'p.name as p_name', 'p.size as p_size',
           'p.unit_type as p_unit_type',
+          'p.pieces_per_box as p_ppb',
         );
       for (const it of items as any[]) {
         const pid = it.purchase_id;
@@ -2270,7 +2271,12 @@ router.get('/page/purchases', async (req, res) => {
         const label = it.p_name
           ? `${it.p_name}${it.p_size ? ` (Size: ${it.p_size})` : ''} (${it.p_unit_type === 'box_sft' ? 'Box' : 'Pcs'})`
           : 'Product';
-        itemsMap[pid].push({ name: label, qty: toNum(it.quantity) });
+        itemsMap[pid].push({
+          name: label,
+          qty: toNum(it.quantity),
+          unitType: it.p_unit_type ?? 'piece',
+          piecesPerBox: Number(it.p_ppb) || 1,
+        });
       }
 
       const ledger = await db('supplier_ledger')
