@@ -88,7 +88,7 @@ router.get('/stock', async (req, res) => {
 
     const products = await pq
       .clone()
-      .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'reorder_level')
+      .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'pieces_per_box', 'reorder_level')
       .offset((page - 1) * PAGE_SIZE)
       .limit(PAGE_SIZE);
 
