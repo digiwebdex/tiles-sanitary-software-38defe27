@@ -445,6 +445,9 @@ router.get('/product-history', async (req, res) => {
   const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
 
   try {
+    const product = await db('products')
+      .where({ dealer_id: dealerId, id: productId })
+      .first('unit_type', 'pieces_per_box', 'category');
     const [purchases, sales, returns] = await Promise.all([
       db('purchase_items as pi')
         .leftJoin('purchases as p', 'p.id', 'pi.purchase_id')
@@ -498,7 +501,13 @@ router.get('/product-history', async (req, res) => {
     rows.sort((a, b) => b.date.localeCompare(a.date));
     const total = rows.length;
     const paged = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    res.json({ rows: paged, total });
+    res.json({
+      rows: paged,
+      total,
+      unitType: product?.unit_type ?? null,
+      piecesPerBox: Number(product?.pieces_per_box ?? 1),
+      category: product?.category ?? null,
+    });
   } catch (err) {
     console.error('[reports.product-history]', err);
     res.status(500).json({ error: 'Failed to load product history' });
@@ -2444,7 +2453,7 @@ router.get('/page/profit-analysis', async (req, res) => {
     const [products, saleItems, stocks, purchaseItems] = await Promise.all([
       db('products')
         .where({ dealer_id: dealerId, active: true })
-        .select('id', 'sku', 'name', 'brand', 'category', 'unit_type'),
+        .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'pieces_per_box'),
       db('sale_items')
         .where({ dealer_id: dealerId })
         .select('product_id', 'quantity', 'sale_rate', 'total', 'total_sft'),
@@ -2499,6 +2508,8 @@ router.get('/page/profit-analysis', async (req, res) => {
           name: p.name,
           brand: p.brand ?? '—',
           category: p.category,
+          unitType: p.unit_type,
+          piecesPerBox: Number(p.pieces_per_box ?? 1),
           qtySold: round2(sales.qtySold),
           totalSft: round2(sales.totalSft),
           avgCost: round2(avgCost),
