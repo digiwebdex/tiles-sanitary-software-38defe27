@@ -1623,7 +1623,7 @@ function PurchasesReport({ dealerId }: { dealerId: string }) {
       return {
         purchases: body.purchases ?? [],
         total: body.total ?? 0,
-        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number }[]>,
+        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number; unitType?: string; piecesPerBox?: number }[]>,
         paidMap: (body.paidMap ?? {}) as Record<string, number>,
       };
     },
