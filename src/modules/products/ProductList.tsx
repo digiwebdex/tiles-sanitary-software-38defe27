@@ -102,14 +102,15 @@ const ProductList = ({ dealerId }: ProductListProps) => {
       const res = await vpsAuthedFetch(`/api/products/stock-map?dealerId=${dealerId}`);
       const body = await res.json().catch(() => ({} as any));
       if (!res.ok) throw new Error((body as any)?.error || "Failed to load");
-      const map = new Map<string, { total: number; box: number; sft: number; piece: number; reservedBox: number; reservedPiece: number }>();
+      const map = new Map<string, { total: number; box: number; sft: number; piece: number; totalPieces: number; reservedBox: number; reservedPiece: number }>();
       for (const s of (body.rows ?? []) as any[]) {
         const box = Number(s.box_qty) || 0;
         const sft = Number(s.sft_qty) || 0;
         const piece = Number(s.piece_qty) || 0;
+        const totalPieces = Number(s.total_pieces) || 0;
         const reservedBox = Number(s.reserved_box_qty) || 0;
         const reservedPiece = Number(s.reserved_piece_qty) || 0;
-        map.set(s.product_id, { total: box + piece, box, sft, piece, reservedBox, reservedPiece });
+        map.set(s.product_id, { total: box + piece, box, sft, piece, totalPieces, reservedBox, reservedPiece });
       }
       return map;
     },
