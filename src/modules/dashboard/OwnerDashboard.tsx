@@ -839,6 +839,8 @@ const OwnerDashboard = ({ dealerId }: OwnerDashboardProps) => {
                   {data.lowStockItems.map((item) => {
                     const suggestedQty = Math.max(0, (item.reorderLevel * 2) - item.currentQty);
                     const isOutOfStock = item.currentQty === 0;
+                    const isTile = item.unitType === "box_sft";
+                    const ppb = item.piecesPerBox || 1;
                     return (
                       <TableRow key={item.id} className={isOutOfStock ? "bg-destructive/5" : ""}>
                         <TableCell className="font-medium">{item.name}</TableCell>
@@ -846,9 +848,15 @@ const OwnerDashboard = ({ dealerId }: OwnerDashboardProps) => {
                         <TableCell>
                           <Badge variant="outline" className="capitalize text-xs">{item.category}</Badge>
                         </TableCell>
-                        <TableCell className="text-right text-destructive font-bold">{item.currentQty}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{item.reorderLevel}</TableCell>
-                        <TableCell className="text-right font-semibold text-primary">{suggestedQty}</TableCell>
+                        <TableCell className="text-right text-destructive font-bold">
+                          {formatStockUnit(item.currentQty, ppb, isTile)}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {formatStockUnit(item.reorderLevel, ppb, isTile)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-primary">
+                          {formatStockUnit(suggestedQty, ppb, isTile)}
+                        </TableCell>
                         <TableCell className="text-center">
                           {isOutOfStock ? (
                             <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
