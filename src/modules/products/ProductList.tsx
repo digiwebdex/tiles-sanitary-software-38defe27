@@ -749,6 +749,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
         productName={movementProduct?.name ?? ""}
         dealerId={dealerId}
         unitType={movementProduct?.unit_type ?? "box_sft"}
+        piecesPerBox={Number((movementProduct as any)?.pieces_per_box) || 1}
       />
 
       {permissions.canEditPrices && (
