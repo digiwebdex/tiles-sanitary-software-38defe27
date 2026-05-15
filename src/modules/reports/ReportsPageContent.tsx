@@ -782,7 +782,7 @@ function DetailedSalesReport({ dealerId }: { dealerId: string }) {
       return {
         sales: body.sales ?? [],
         total: body.total ?? 0,
-        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number }[]>,
+        itemsMap: (body.itemsMap ?? {}) as Record<string, { name: string; qty: number; unitType?: string; piecesPerBox?: number }[]>,
       };
     },
   });
