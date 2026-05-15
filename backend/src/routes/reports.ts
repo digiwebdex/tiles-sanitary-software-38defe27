@@ -776,6 +776,7 @@ router.get('/inventory-aging', async (req, res) => {
         brand: product.brand,
         category: product.category,
         unitType: product.unit_type,
+        piecesPerBox: Number(product.pieces_per_box) || 1,
         boxQty, sftQty, pieceQty, avgCostPerUnit,
         fifoStockValue: round2(fifoValue),
         lastSaleDate, daysSinceLastSale, agingCategory,
