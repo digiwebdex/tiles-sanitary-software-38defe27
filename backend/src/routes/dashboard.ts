@@ -129,11 +129,13 @@ router.get('/', async (req: Request, res: Response) => {
     // Low-stock items (qty <= reorder_level), top 10
     const lowStockRows = await db.raw(
       `
-      SELECT p.id, p.name, p.sku, p.category,
+      SELECT p.id, p.name, p.sku, p.category, p.unit_type,
+             COALESCE(p.pieces_per_box, 1) AS pieces_per_box,
              CASE WHEN p.unit_type = 'box_sft'
                   THEN COALESCE(s.box_qty, 0)
                   ELSE COALESCE(s.piece_qty, 0)
              END AS current_qty,
+             COALESCE(s.total_pieces, 0) AS total_pieces,
              COALESCE(p.reorder_level, 0) AS reorder_level
       FROM products p
       LEFT JOIN stock s ON s.product_id = p.id AND s.dealer_id = p.dealer_id
@@ -153,6 +155,9 @@ router.get('/', async (req: Request, res: Response) => {
       name: r.name,
       sku: r.sku,
       category: r.category ?? '',
+      unitType: r.unit_type ?? 'piece',
+      piecesPerBox: Number(r.pieces_per_box) || 1,
+      totalPieces: round2(r.total_pieces),
       currentQty: round2(r.current_qty),
       reorderLevel: round2(r.reorder_level),
     }));
