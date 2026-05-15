@@ -120,7 +120,7 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
       notes: dv?.notes ?? "",
       project_id: dv?.project_id ?? null,
       site_id: dv?.site_id ?? null,
-      items: dv?.items?.length ? dv.items : [{ product_id: "", quantity: 0, sale_rate: 0 }],
+      items: dv?.items?.length ? dv.items : [{ product_id: "", quantity: 0, box_qty: 0, piece_qty: 0, sale_rate: 0 }],
     },
   });
 
