@@ -803,7 +803,7 @@ router.get('/low-stock', async (req, res) => {
     const products = await db('products')
       .where({ dealer_id: dealerId, active: true })
       .orderBy('sku')
-      .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'reorder_level');
+      .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'reorder_level', 'pieces_per_box');
     if (!products.length) {
       res.json([]);
       return;
@@ -812,20 +812,25 @@ router.get('/low-stock', async (req, res) => {
     const stocks = await db('stock')
       .where({ dealer_id: dealerId })
       .whereIn('product_id', ids)
-      .select('product_id', 'box_qty', 'piece_qty', 'sft_qty');
+      .select('product_id', 'box_qty', 'piece_qty', 'sft_qty', 'total_pieces');
     const sm = new Map(stocks.map((s: any) => [s.product_id, s]));
 
     const rows: any[] = [];
     for (const p of products as any[]) {
       const s: any = sm.get(p.id);
+      const isTile = p.unit_type === 'box_sft';
+      const ppb = Math.max(1, Number(p.pieces_per_box ?? 1) || 1);
       const boxQty = Number(s?.box_qty ?? 0);
       const pieceQty = Number(s?.piece_qty ?? 0);
-      const currentStock = boxQty + pieceQty;
+      const totalPieces = Number(s?.total_pieces ?? 0);
+      const currentStock = isTile ? boxQty : pieceQty;
       const reorderLevel = Number(p.reorder_level ?? 0);
       if (currentStock <= reorderLevel) {
         rows.push({
           productId: p.id, sku: p.sku, name: p.name, brand: p.brand,
           category: p.category, unitType: p.unit_type,
+          piecesPerBox: ppb,
+          totalPieces,
           currentStock, reorderLevel,
           suggestedReorderQty: Math.max(0, reorderLevel * 2 - currentStock),
         });
