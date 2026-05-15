@@ -886,7 +886,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     const oldItems = await db('sale_items')
       .where({ sale_id: saleId })
-      .select('id', 'product_id', 'quantity', 'available_qty_at_sale');
+      .select('id', 'product_id', 'quantity', 'available_qty_at_sale', 'box_qty', 'piece_qty', 'total_pieces');
 
     // ── Pre-tx: customer find/create ──
     const customerName = input.customer_name.trim();
