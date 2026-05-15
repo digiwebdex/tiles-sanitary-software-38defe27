@@ -262,8 +262,24 @@ const ModernChallanDocument = ({ sale, items, customer, challan, showPrices, dea
                         <p className="font-semibold text-foreground leading-tight">{item.products?.name}</p>
                         <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{item.products?.sku}</p>
                       </td>
-                      <td className="px-3 py-2.5 text-center font-bold text-foreground">{item.quantity}</td>
-                      <td className="px-3 py-2.5 text-center text-muted-foreground text-[11px]">{item.products?.unit_type === "box_sft" ? "Box" : "Pc"}</td>
+                      <td className="px-3 py-2.5 text-center font-bold text-foreground">
+                        {item.products?.unit_type === "box_sft" && (item.box_qty != null || item.piece_qty != null) ? (
+                          <span>
+                            {Number(item.box_qty) || 0}
+                            <span className="text-[10px] font-normal text-muted-foreground"> box</span>
+                            {Number(item.piece_qty) > 0 && (
+                              <>
+                                {" "}
+                                {Number(item.piece_qty)}
+                                <span className="text-[10px] font-normal text-muted-foreground"> pc</span>
+                              </>
+                            )}
+                          </span>
+                        ) : (
+                          item.quantity
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-center text-muted-foreground text-[11px]">{item.products?.unit_type === "box_sft" ? "Box+Pc" : "Pc"}</td>
                       <td className="px-3 py-2.5 text-center text-foreground">{item.total_sft ? Number(item.total_sft).toFixed(2) : "—"}</td>
                       {showPrices && (
                         <td className="px-3 py-2.5 text-right text-foreground">{formatCurrency(item.sale_rate)}</td>
