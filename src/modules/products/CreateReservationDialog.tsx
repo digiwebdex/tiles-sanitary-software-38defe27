@@ -190,15 +190,48 @@ const CreateReservationDialog = ({
 
           {/* Quantity */}
           <div className="space-y-1.5">
-            <Label>Quantity ({unitLabel}) *</Label>
-            <Input
-              type="number"
-              min="1"
-              max={freeQty ?? undefined}
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              placeholder={`Enter ${unitLabel.toLowerCase()}`}
-            />
+            <Label>Quantity {useDual ? "(Box + Pc)" : `(${unitLabel})`} *</Label>
+            {useDual ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={boxQty}
+                    onChange={(e) => syncDualQty(e.target.value, pieceQty)}
+                    placeholder="Box"
+                    className="w-24"
+                  />
+                  <span className="text-xs text-muted-foreground">box</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    max={ppb - 1}
+                    step="1"
+                    value={pieceQty}
+                    onChange={(e) => syncDualQty(boxQty, e.target.value)}
+                    placeholder="Pc"
+                    className="w-24"
+                  />
+                  <span className="text-xs text-muted-foreground">pc</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  = {Number(qty || 0).toFixed(3)} box
+                  {product.per_box_sft ? ` · ${(Number(qty || 0) * Number(product.per_box_sft)).toFixed(2)} sft` : ""}
+                  {freeQty !== null ? ` · Free: ${freeQty} box` : ""}
+                </p>
+              </>
+            ) : (
+              <Input
+                type="number"
+                min="1"
+                max={freeQty ?? undefined}
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                placeholder={`Enter ${unitLabel.toLowerCase()}`}
+              />
+            )}
           </div>
 
           {/* Expiry */}
