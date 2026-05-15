@@ -135,6 +135,28 @@ export const stockService = {
     return vpsAdjustment(type, { dealer_id: dealerId, product_id: productId, quantity });
   },
 
+  /**
+   * Phase 2E — Box+Pc dual-unit adjust. Pass either box_qty/piece_qty
+   * (preferred) or quantity (legacy fallback). Backend computes total_pieces
+   * and writes a stock_ledger audit row.
+   */
+  adjustStockBoxPiece: (
+    productId: string,
+    type: "add" | "deduct" | "broken",
+    dealerId: string,
+    payload: { box_qty?: number; piece_qty?: number; quantity?: number; reason?: string },
+  ) => {
+    const body: Record<string, unknown> = {
+      dealer_id: dealerId,
+      product_id: productId,
+    };
+    if (payload.box_qty != null) body.box_qty = payload.box_qty;
+    if (payload.piece_qty != null) body.piece_qty = payload.piece_qty;
+    if (payload.quantity != null) body.quantity = payload.quantity;
+    if (payload.reason) body.reason = payload.reason;
+    return vpsAdjustment(type, body);
+  },
+
   deductBrokenStock: (productId: string, quantity: number, dealerId: string, reason: string) => {
     if (quantity <= 0) throw new Error("Quantity must be positive");
     return vpsAdjustment("broken", {

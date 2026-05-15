@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -20,6 +20,7 @@ import {
   type ApprovalContextData,
 } from "@/services/approvalService";
 import { ApprovalRequestDialog } from "@/components/approval/ApprovalRequestDialog";
+import { toTotalPieces, formatBoxPiece } from "@/lib/units";
 
 interface StockAdjustDialogProps {
   open: boolean;
@@ -29,6 +30,8 @@ interface StockAdjustDialogProps {
     name: string;
     sku: string;
     unit_type: string;
+    pieces_per_box?: number | null;
+    per_box_sft?: number | null;
   } | null;
   dealerId: string;
   onSuccess: () => void;
@@ -36,7 +39,8 @@ interface StockAdjustDialogProps {
 
 const StockAdjustDialog = ({ open, onOpenChange, product, dealerId, onSuccess }: StockAdjustDialogProps) => {
   const { user, isDealerAdmin } = useAuth();
-  const [quantity, setQuantity] = useState("");
+  const [boxQty, setBoxQty] = useState("");
+  const [pieceQty, setPieceQty] = useState("");
   const [adjustType, setAdjustType] = useState<"add" | "deduct">("add");
   const [reason, setReason] = useState("");
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
@@ -47,33 +51,56 @@ const StockAdjustDialog = ({ open, onOpenChange, product, dealerId, onSuccess }:
     if (open && dealerId) {
       getApprovalSettings(dealerId).then(setSettings).catch(() => {});
     }
+    if (!open) {
+      setBoxQty(""); setPieceQty(""); setReason(""); setAdjustType("add");
+    }
   }, [open, dealerId]);
 
+  const ppb = Math.max(1, Number(product?.pieces_per_box ?? 1) || 1);
+  const isTile = product?.unit_type === "box_sft";
+  const perBoxSft = Number(product?.per_box_sft ?? 0) || 0;
+
+  const totalPieces = useMemo(
+    () => toTotalPieces({ box: Number(boxQty) || 0, piece: Number(pieceQty) || 0 }, ppb),
+    [boxQty, pieceQty, ppb]
+  );
+  const sftPreview = isTile && perBoxSft > 0
+    ? ((Number(boxQty) || 0) + (Number(pieceQty) || 0) / ppb) * perBoxSft
+    : 0;
+
   const performAdjust = async () => {
-    const qty = Number(quantity);
-    await stockService.adjustStock(product!.id, qty, adjustType, dealerId);
+    await stockService.adjustStockBoxPiece(product!.id, adjustType, dealerId, {
+      box_qty: isTile ? Number(boxQty) || 0 : 0,
+      piece_qty: Number(pieceQty) || 0,
+      reason: reason.trim(),
+    });
     await logAudit({
       dealer_id: dealerId,
       action: `stock_manual_${adjustType}`,
       table_name: "stock",
       record_id: product!.id,
-      new_data: { quantity: qty, type: adjustType, reason: reason.trim() },
+      new_data: {
+        box_qty: isTile ? Number(boxQty) || 0 : 0,
+        piece_qty: Number(pieceQty) || 0,
+        total_pieces: totalPieces,
+        type: adjustType,
+        reason: reason.trim(),
+      },
     });
   };
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const qty = Number(quantity);
-      if (!qty || qty <= 0) throw new Error("Quantity must be > 0");
+      if (totalPieces <= 0) throw new Error("Quantity must be > 0");
       if (!reason.trim()) throw new Error("Reason is required");
       if (!product) throw new Error("No product selected");
 
-      // Approval gate
       if (settings && isApprovalRequired(settings, "stock_adjustment")) {
         const ctx: ApprovalContextData = {
           product_name: product.name,
           adjustment_type: adjustType,
-          adjustment_qty: qty,
+          adjustment_qty: totalPieces,
+          adjustment_display: formatBoxPiece(totalPieces, ppb),
         };
         const existing = await findValidApproval(dealerId, "stock_adjustment", ctx);
         if (existing) {
@@ -98,7 +125,7 @@ const StockAdjustDialog = ({ open, onOpenChange, product, dealerId, onSuccess }:
     },
     onSuccess: () => {
       toast.success(`Stock ${adjustType === "add" ? "added" : "deducted"} successfully`);
-      setQuantity(""); setReason(""); setAdjustType("add");
+      setBoxQty(""); setPieceQty(""); setReason(""); setAdjustType("add");
       onSuccess();
     },
     onError: (e: any) => {
@@ -123,7 +150,6 @@ const StockAdjustDialog = ({ open, onOpenChange, product, dealerId, onSuccess }:
   };
 
   if (!product) return null;
-  const unitLabel = product.unit_type === "box_sft" ? "Boxes" : "Pieces";
 
   return (
     <>
@@ -146,12 +172,49 @@ const StockAdjustDialog = ({ open, onOpenChange, product, dealerId, onSuccess }:
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Quantity ({unitLabel}) *</Label>
-              <Input type="number" step="0.01" min="0.01" value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder={`Enter ${unitLabel.toLowerCase()}`} />
-            </div>
+
+            {isTile ? (
+              <div className="space-y-2">
+                <Label>Quantity *</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Input
+                      type="number" min="0" step="1"
+                      value={boxQty}
+                      onChange={(e) => setBoxQty(e.target.value)}
+                      placeholder="Box"
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">Box</p>
+                  </div>
+                  <div>
+                    <Input
+                      type="number" min="0" step="1"
+                      value={pieceQty}
+                      onChange={(e) => setPieceQty(e.target.value)}
+                      placeholder="Pc"
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">Pc (ppb {ppb})</p>
+                  </div>
+                </div>
+                {totalPieces > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    = {formatBoxPiece(totalPieces, ppb)} ({totalPieces} pcs)
+                    {perBoxSft > 0 && ` ≈ ${sftPreview.toFixed(2)} SFT`}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <Label>Quantity (Pieces) *</Label>
+                <Input
+                  type="number" step="1" min="0"
+                  value={pieceQty}
+                  onChange={(e) => setPieceQty(e.target.value)}
+                  placeholder="Enter pieces"
+                />
+              </div>
+            )}
+
             <div>
               <Label>Reason *</Label>
               <Textarea value={reason} onChange={(e) => setReason(e.target.value)}
@@ -161,7 +224,7 @@ const StockAdjustDialog = ({ open, onOpenChange, product, dealerId, onSuccess }:
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={() => mutation.mutate()}
-              disabled={mutation.isPending || !quantity || !reason.trim()}>
+              disabled={mutation.isPending || totalPieces <= 0 || !reason.trim()}>
               {mutation.isPending ? "Processing…" : adjustType === "add" ? "Add Stock" : "Deduct Stock"}
             </Button>
           </DialogFooter>

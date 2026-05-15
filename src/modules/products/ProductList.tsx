@@ -712,7 +712,11 @@ const ProductList = ({ dealerId }: ProductListProps) => {
         <StockAdjustDialog
           open={!!adjustStockProduct}
           onOpenChange={(open) => { if (!open) setAdjustStockProduct(null); }}
-          product={adjustStockProduct}
+          product={adjustStockProduct ? {
+            ...adjustStockProduct,
+            pieces_per_box: Number((adjustStockProduct as any).pieces_per_box) || 1,
+            per_box_sft: Number(adjustStockProduct.per_box_sft) || 0,
+          } : null}
           dealerId={dealerId}
           onSuccess={() => {
             setAdjustStockProduct(null);
