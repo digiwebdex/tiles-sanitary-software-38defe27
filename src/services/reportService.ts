@@ -136,13 +136,21 @@ export interface ProductHistoryRow {
   reference: string;
 }
 
+export interface ProductHistoryResponse {
+  rows: ProductHistoryRow[];
+  total: number;
+  unitType: string | null;
+  piecesPerBox: number;
+  category: string | null;
+}
+
 export async function fetchProductHistory(
   dealerId: string,
   productId: string,
   page: number
-): Promise<{ rows: ProductHistoryRow[]; total: number }> {
+): Promise<ProductHistoryResponse> {
   const params = new URLSearchParams({ dealerId, productId, page: String(page) });
-  return vpsRequest<{ rows: ProductHistoryRow[]; total: number }>(`/api/reports/product-history?${params}`);
+  return vpsRequest<ProductHistoryResponse>(`/api/reports/product-history?${params}`);
 }
 
 // ─── Customer Due Report ──────────────────────────────────

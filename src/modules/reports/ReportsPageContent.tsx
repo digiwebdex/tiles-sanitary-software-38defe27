@@ -1074,22 +1074,56 @@ function ProductHistoryReport({ dealerId }: { dealerId: string }) {
     enabled: !!productId,
   });
 
+  const rows = data?.rows ?? [];
+  const ppb = data?.piecesPerBox ?? 1;
+  const isTile = data?.category === "tiles";
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
         <CardTitle className="text-base">Product History</CardTitle>
-        <Select value={productId} onValueChange={(v) => { setProductId(v); setPage(1); }}>
-          <SelectTrigger className="w-64">
-            <SelectValue placeholder="Select a product" />
-          </SelectTrigger>
-          <SelectContent>
-            {(products ?? []).map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.sku} — {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={productId} onValueChange={(v) => { setProductId(v); setPage(1); }}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select a product" />
+            </SelectTrigger>
+            <SelectContent>
+              {(products ?? []).map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.sku} — {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {productId && rows.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const productLabel =
+                  (products ?? []).find((p) => p.id === productId)?.name ?? "product";
+                const exportData = rows.map((r) => ({
+                  date: r.date,
+                  type: r.type,
+                  reference: r.reference,
+                  quantity: formatStockUnit(r.quantity, ppb, isTile),
+                  rate: r.rate,
+                  total: r.total,
+                }));
+                exportToExcel(exportData, [
+                  { header: "Date", key: "date" },
+                  { header: "Type", key: "type" },
+                  { header: "Reference", key: "reference" },
+                  { header: "Qty", key: "quantity" },
+                  { header: "Rate", key: "rate", format: "currency" as const },
+                  { header: "Total", key: "total", format: "currency" as const },
+                ], `product-history-${productLabel}-${new Date().toISOString().split("T")[0]}`);
+              }}
+            >
+              Export Excel
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {!productId ? (
@@ -1111,9 +1145,9 @@ function ProductHistoryReport({ dealerId }: { dealerId: string }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(data?.rows ?? []).length === 0 ? (
+                  {rows.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No history</TableCell></TableRow>
-                  ) : (data?.rows ?? []).map((r) => (
+                  ) : rows.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{r.date}</TableCell>
                       <TableCell>
@@ -1125,7 +1159,7 @@ function ProductHistoryReport({ dealerId }: { dealerId: string }) {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{r.reference}</TableCell>
-                      <TableCell className="text-right">{r.quantity}</TableCell>
+                      <TableCell className="text-right">{formatStockUnit(r.quantity, ppb, isTile)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(r.rate)}</TableCell>
                       <TableCell className="text-right font-medium">{formatCurrency(r.total)}</TableCell>
                     </TableRow>
@@ -1952,6 +1986,8 @@ function ProfitAnalysisReport({ dealerId }: { dealerId: string }) {
         name: string;
         brand: string;
         category: string;
+        unitType?: string;
+        piecesPerBox?: number;
         qtySold: number;
         totalSft: number;
         avgCost: number;
@@ -2081,7 +2117,7 @@ function ProfitAnalysisReport({ dealerId }: { dealerId: string }) {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">{r.brand}</TableCell>
-                        <TableCell className="text-right">{r.qtySold}</TableCell>
+                        <TableCell className="text-right">{formatStockUnit(r.qtySold, r.piecesPerBox ?? 1, r.category === "tiles")}</TableCell>
                         <TableCell className="text-right text-muted-foreground">৳{r.avgCost.toLocaleString()}</TableCell>
                         <TableCell className="text-right">৳{r.avgSaleRate.toLocaleString()}</TableCell>
                         <TableCell className="text-right font-medium">৳{r.revenue.toLocaleString()}</TableCell>
