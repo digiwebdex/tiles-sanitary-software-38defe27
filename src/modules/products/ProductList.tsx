@@ -41,6 +41,7 @@ import ReservationListDialog from "./ReservationListDialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useDealerInfo } from "@/hooks/useDealerInfo";
 import { exportToExcel } from "@/lib/exportUtils";
+import { formatStockUnit } from "@/lib/units";
 
 interface ProductListProps {
   dealerId: string;
