@@ -182,8 +182,8 @@ const StockMovementDialog = ({
                     <TableHead>Type</TableHead>
                     <TableHead>Party / Reason</TableHead>
                     <TableHead>Ref</TableHead>
-                    <TableHead className="text-right">In ({qtyLabel})</TableHead>
-                    <TableHead className="text-right">Out ({qtyLabel})</TableHead>
+                    <TableHead className="text-right">In</TableHead>
+                    <TableHead className="text-right">Out</TableHead>
                     <TableHead className="text-right">Balance</TableHead>
                   </TableRow>
                 </TableHeader>
