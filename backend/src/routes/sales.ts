@@ -712,6 +712,29 @@ router.post('/', async (req: Request, res: Response) => {
               );
             }
           }
+
+          // ── Stock ledger audit row (sale_out) ──
+          const stockAfterRow = await trx('stock')
+            .where({ dealer_id: dealerId, product_id: item.product_id })
+            .first('total_pieces');
+          const stockAfterPieces = Number(stockAfterRow?.total_pieces ?? 0);
+          await trx('stock_ledger').insert({
+            dealer_id: dealerId,
+            product_id: item.product_id,
+            txn_type: 'sale_out',
+            reference_table: 'sales',
+            reference_id: newSaleId,
+            reference_no: invoiceNumber,
+            box_qty: -Number(item.box_qty),
+            piece_qty: -Number(item.piece_qty),
+            pieces_per_box: item.pieces_per_box,
+            total_pieces: -Number(item.total_pieces),
+            stock_before_pieces: stockBeforePieces,
+            stock_after_pieces: stockAfterPieces,
+            stock_before_display: formatBoxPiece(stockBeforePieces, item.pieces_per_box),
+            stock_after_display: formatBoxPiece(stockAfterPieces, item.pieces_per_box),
+            created_by: userId,
+          });
         }
 
         // ── Ledger entries ──
