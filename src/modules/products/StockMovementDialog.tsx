@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { cn, formatCurrency } from "@/lib/utils";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
+import { formatStockUnit } from "@/lib/units";
 import { CalendarIcon } from "lucide-react";
 
 interface StockMovementDialogProps {
@@ -24,6 +25,7 @@ interface StockMovementDialogProps {
   productName: string;
   dealerId: string;
   unitType: string;
+  piecesPerBox?: number;
 }
 
 type MovementEntry = {
