@@ -1,111 +1,90 @@
-## Bangla ERP ভিডিও বনাম TilesERP — Feature Gap Analysis
+## Goal
 
-আপনার রেফারেন্স ভিডিওর প্রতিটি ফিচার আমি বর্তমান TilesERP-এর সাথে মিলিয়ে দেখেছি। নিচে কী আছে এবং কী যোগ করা দরকার তার পরিষ্কার তালিকা দিলাম।
+Tiles ক্রয় ও বিক্রয় উভয়ের সময় ব্যবহারকারী **SFT, Box, অথবা Box + অতিরিক্ত Piece** — যেকোন এককে এন্ট্রি দিতে পারবেন। সফটওয়্যার সব হিসাব করে স্টক দেখাবে: **X Box Y Pcs (≈ Z SFT)**।
 
----
-
-### ✅ ইতোমধ্যে আছে (Already Implemented)
-
-| Bangla ERP Feature | TilesERP Equivalent |
-|---|---|
-| Login / Module navigation | Auth + Sidebar modules |
-| Item Group / Brand / Item create | Products module (group, brand, SKU) |
-| Box / SFT / Piece units + Tile size + pcs/box | `src/lib/units.ts`, ProductForm |
-| Stock alert level | Low Stock Alerts (2× reorder buffer) |
-| Supplier register + statement | Suppliers module + Ledger |
-| Purchase Entry (multi-unit, discount, partial pay) | PurchaseForm + landed cost |
-| Purchase / Sales / Stock reports (SFT+pcs+box) | Reports module (10+ reports) |
-| Customer register + CRM | Customers module |
-| Sales Entry / Quick Sale / POS | SaleForm + POSSalePage |
-| Cash & Credit sale, partial payment | Sales + Collections |
-| Invoice & Challan print | InvoicePage, ChallanPage |
-| Sales / Purchase return | sales-returns, purchase-returns modules |
-| Customer statement + Due Receipt (DUCR) | Ledger + CollectionTracker |
-| Profit per sale (FIFO) | salesService FIFO breakdown |
-| Expense entry | Expenses route + service |
-| Cancelled invoice tracking | Sales cancel flow + audit log |
-| EMI / Wholesale price | Pricing Tiers module |
-| SMS notification | BulkSMSBD integration |
-| Backup | Automated GDrive backup |
+এটি Phase 2B-এর tiles-নির্দিষ্ট সংস্করণ। শুধুমাত্র `category = Tiles` পণ্যের জন্য প্রযোজ্য; Sanitary পণ্য আগের মতই Pcs-এ চলবে।
 
 ---
 
-### ❌ অনুপস্থিত — যোগ করা প্রয়োজন (Missing Features)
+## Foundation (ইতিমধ্যে আছে)
 
-নিচের ৭টি বড় গ্যাপ পেয়েছি। ভিডিওতে যেগুলো আছে কিন্তু আমাদের সিস্টেমে নেই:
+- `products.per_box_sft` — প্রতি বক্সে কত SFT (legacy column, tiles-এ বাধ্যতামূলক)
+- `products.pieces_per_box` — প্রতি বক্সে কত pieces (Phase 1 / 2A)
+- `purchase_items / sale_items / batches / stock` — সবগুলোতে `box_qty`, `piece_qty`, `total_pieces` কলাম আছে
+- `dealers.dual_unit_enabled` toggle আছে
+- `src/lib/areaCalculator.ts`, `tileRounding.ts` — SFT ↔ Box converter আছে
 
-#### 1. HRM Module (কর্মচারী ও বেতন)
-- Employee Register (নাম, পদ, যোগদান তারিখ, ফোন, NID)
-- Employee Salary Setup — Basic + House Rent % + Medical % + Transport % auto-calc
-- Monthly Salary Disbursement (all/selected employees)
-- Salary voucher + Accounts-এ auto-posting (cash কমে যাবে)
-- Employee-wise salary history report
-
-#### 2. Director / Investor Module
-- Director Register (নাম, ফোন, ঠিকানা, share %)
-- "Director Deposit Receive" transaction type → cashbook auto-update
-- Director Withdrawal transaction
-- Director-wise investment statement
-- Owner's Equity রিপোর্টে ব্যবহার
-
-#### 3. Warehouse / Godown Management (Multi-location stock)
-- Warehouse Register (store name, manager, phone, address, opening date)
-- Warehouse In-Out (showroom ↔ godown stock transfer)
-- Transfer cost as expense
-- Warehouse-wise stock report
-- In-Out transaction history
-
-#### 4. Consolidated Cashbook View
-- একটি unified Cashbook page যেখানে সব cash in/out একসাথে: Director deposit, purchase payment, supplier bill, customer collection, sales receipt, expense, salary
-- Date-range filter, opening/closing balance
-- Print + Excel export
-
-#### 5. Multi-Bank Account Management
-- Bank Account Register (bank name, account no, branch, opening balance)
-- প্রতিটি payment-এ "Cash" বা নির্দিষ্ট "Bank Account" select
-- Bank-wise transaction ledger ও balance
-- Bank statement print
-
-#### 6. Financial Statements (Accounting Reports)
-- **Income Statement** — মোট sales income vs total expense, period-filtered
-- **Profit & Loss Statement** — Gross profit, operating expense, net profit, print-ready format
-- **Balance Sheet** — Assets (cash, bank, stock value, receivables) vs Liabilities (payables, owner equity, retained earnings)
-- বর্তমানে শুধু `AccountingSummary` আছে; formal P&L / Balance Sheet নেই
-
-#### 7. Tile Auto-Rounding to Full Tiles (Quality-of-life)
-- ভিডিওতে: 200 SFT লিখলে সিস্টেম auto round করে 222.22 SFT (full tile boundary)
-- বর্তমানে SaleForm/PurchaseForm-এ manual; auto-round option toggle যোগ করা যেতে পারে
+বাকি কাজ: form-এ unit selector, পেছনে total_pieces হিসাব, এবং stock display তিন এককে।
 
 ---
 
-### 🟡 আংশিক আছে (Partial — Optional Enhancement)
+## Plan
 
-- **Account Transaction unified screen** — ভিডিওতে এক ড্রপডাউন থেকে "Director Deposit / Supplier Payment / Customer Collection / Expense" সব select করা যায়। আমাদের separate page আছে; চাইলে একটা unified "Account Transaction" entry page বানানো যায়।
-- **Voucher print** — Supplier bill payment, salary payment ইত্যাদির আলাদা voucher print
+### Step 1 — Tiles Purchase Form (SFT ভিত্তিক এন্ট্রি)
+
+`src/modules/purchases/PurchaseForm.tsx` — tiles row-এ একটি **Entry Mode** selector যোগ করা হবে:
+
+- **By SFT** — ব্যবহারকারী SFT লেখেন → auto round up করে boxes (next full box, `tileRounding.ts` দিয়ে) → `box_qty`, `piece_qty=0`, `total_pieces` হিসাব হয়
+- **By Box** — শুধু box সংখ্যা
+- **By Box + Pc** — box + আলাদা pieces (Phase 2A-র মতই)
+
+Live preview দেখাবে: `5 Box = 111.10 SFT = 60 Pcs` (per_box_sft × box_qty)।
+
+Rate field `৳/SFT` রাখা হবে (টাইলস ব্যবসার স্বাভাবিক ধরন)। Total = `final_sft × rate`।
+
+Sanitary রো অপরিবর্তিত — শুধু Pcs।
+
+### Step 2 — Tiles Sale Form (একই তিন মোড)
+
+`src/modules/sales/SaleForm.tsx` — গ্রাহক চাইলে SFT-এ, Box-এ, বা Box + কয়েক Pc আলাদা — এই তিন মোডে বিক্রি। SFT মোডে `tileRounding` দিয়ে box-এ গোল করা হবে কিন্তু "Sell loose pieces" চেক করলে pieces আলাদাভাবে অনুমোদিত (যেমন 5 Box + 3 Pc)।
+
+POS সেলেও একই UX।
+
+### Step 3 — Backend: total_pieces canonical
+
+Backend route ও service-এ ইতিমধ্যে `total_pieces` কলাম আছে কিন্তু পপুলেট হয় না। নিম্নলিখিতগুলোতে server-side compute যোগ করা হবে (frontend থেকে box_qty, piece_qty পাঠানো হবে; backend `pieces_per_box` lookup করে `total_pieces` লিখবে):
+
+- `POST /api/purchases` → `purchase_items` + `product_batches` + `stock` সব total_pieces-এ
+- `POST/PUT/DELETE /api/sales` → FIFO allocator total_pieces-এ
+- Returns, reservations, backorders — একই
+
+stock_ledger row প্রতিটি stock-পরিবর্তনে লেখা হবে (audit trail)।
+
+### Step 4 — Stock Display: Box + Pcs + SFT
+
+একটি reusable `<TileStockBadge total_pieces={..} pieces_per_box={..} per_box_sft={..} />` কম্পোনেন্ট:
+
+```
+12 Box 3 Pc  (≈ 268.89 SFT)
+```
+
+প্রয়োগ হবে: Stock list, Product detail, Sale form availability, Purchase form current stock, Dashboard low-stock, Reports।
+
+Sanitary product হলে শুধু `15 Pc` দেখাবে (SFT অংশ বাদ)।
+
+### Step 5 — Guardrails
+
+- Tile product save করার সময় `per_box_sft > 0` ও `pieces_per_box > 0` বাধ্যতামূলক
+- `dual_unit_enabled = false` ডিলারের জন্য পুরাতন single-quantity UI কাজ করতে থাকবে (regression-free)
+- Migration আগে থেকেই deployed; নতুন কোন schema change নেই
 
 ---
 
-### Implementation Priority (আমার সুপারিশ)
+## Technical notes
 
-| Priority | Feature | Effort | Business Impact |
-|---|---|---|---|
-| 🔴 High | Financial Statements (P&L + Balance Sheet) | Medium | High — accounting/audit |
-| 🔴 High | Multi-Bank Account | Medium | High — সব dealer-এর দরকার |
-| 🔴 High | Consolidated Cashbook | Small | High — daily use |
-| 🟠 Med | HRM (Employee + Salary) | Large | Medium — সব dealer চায় না |
-| 🟠 Med | Warehouse / Godown | Large | Medium — বড় dealer-এর জন্য |
-| 🟡 Low | Director / Investor module | Small | Low — অনেকে spreadsheet-এ রাখে |
-| 🟡 Low | Tile auto-round toggle | Small | Low — convenience |
+- Helper: `boxesToPieces(box, pc, ppb) = box*ppb + pc` and `piecesToSft(pieces, ppb, perBoxSft) = pieces / ppb * perBoxSft`
+- Rounding: `tileRounding.ts` already returns next-full-box for an SFT input
+- API contract change: clients send `{ box_qty, piece_qty, entry_mode, sft_input? }`; legacy `quantity` field still accepted for non-tile and non-dual-unit dealers (backward compat)
+- All FIFO RPCs (`allocate_sale_batches`, `restore_sale_batches`, `create_stock_reservation`) need rewrite to operate on `total_pieces` — this is the highest-risk piece, will be done in a transaction with full test on demo dealer first
+- Reports module touched: Stock report, Sales report — column changes only, math unchanged
 
 ---
 
-### আপনার সিদ্ধান্ত দরকার
+## Suggested execution order
 
-আমি কোনগুলো এখনই বানানো শুরু করব? অনুগ্রহ করে confirm করুন:
+1. **2B-i** Step 1 + Step 4 (read-only) — Purchase by SFT + new stock display. Lowest risk, immediately useful.
+2. **2B-ii** Step 3 backend writes (purchases path) + stock_ledger.
+3. **2C** Step 2 + Step 3 sales path + FIFO RPC rewrite.
+4. **2D** Returns + reservations + backorders.
 
-1. **সবগুলো একসাথে** (বড় work, কয়েকটি phase-এ deliver হবে)
-2. **শুধু High-priority ৩টি** (Financial Statements + Multi-Bank + Cashbook)
-3. **আপনি custom select করবেন** — কোন কোন feature আগে চাই বলুন
-4. **শুধু analysis দরকার ছিল**, এখনই কিছু বানাতে হবে না
-
-আপনার উত্তর পেলে আমি প্রতিটি selected feature-এর জন্য detailed technical plan (DB migration + API + UI) আলাদা করে তৈরি করব।
+প্রতিটি sub-step আলাদা approval নিয়ে করব। আজ শুরু করব **2B-i** দিয়ে?
