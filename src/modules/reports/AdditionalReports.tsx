@@ -504,9 +504,9 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
                         <Badge variant={r.type === "Purchase" ? "secondary" : r.type === "Sale" ? "default" : "outline"} className="text-xs">{r.type}</Badge>
                       </TableCell>
                       <TableCell className="font-mono text-sm">{r.reference}</TableCell>
-                      <TableCell className="text-right text-primary font-medium">{r.qtyIn > 0 ? `+${r.qtyIn}` : "—"}</TableCell>
-                      <TableCell className="text-right text-destructive font-medium">{r.qtyOut > 0 ? `-${r.qtyOut}` : "—"}</TableCell>
-                      <TableCell className="text-right font-semibold">{(r as any).balance}</TableCell>
+                      <TableCell className="text-right text-primary font-medium">{r.qtyIn > 0 ? `+${fmt(r.qtyIn)}` : "—"}</TableCell>
+                      <TableCell className="text-right text-destructive font-medium">{r.qtyOut > 0 ? `-${fmt(r.qtyOut)}` : "—"}</TableCell>
+                      <TableCell className="text-right font-semibold">{(r as any).balance < 0 ? `-${fmt(Math.abs((r as any).balance))}` : fmt((r as any).balance)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
