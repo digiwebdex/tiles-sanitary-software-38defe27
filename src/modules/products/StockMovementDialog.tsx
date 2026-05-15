@@ -55,8 +55,11 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const StockMovementDialog = ({
-  open, onOpenChange, productId, productName, dealerId, unitType,
+  open, onOpenChange, productId, productName, dealerId, unitType, piecesPerBox = 1,
 }: StockMovementDialogProps) => {
+  const isTile = unitType === "box_sft";
+  const ppb = piecesPerBox || 1;
+  const fmt = (q: number) => formatStockUnit(q, ppb, isTile);
   const [fromDate, setFromDate] = useState<Date>(startOfMonth(new Date()));
   const [toDate, setToDate] = useState<Date>(new Date());
 
