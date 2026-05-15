@@ -1452,7 +1452,11 @@ router.get('/stock-movement', async (req, res) => {
       balance += m.qtyIn - m.qtyOut;
       return { ...m, balance };
     });
-    res.json({ rows: withBalance });
+    res.json({
+      rows: withBalance,
+      unitType: product?.unit_type ?? 'piece',
+      piecesPerBox: Number(product?.pieces_per_box) || 1,
+    });
   } catch (err: any) {
     console.error('[reports.stock-movement]', err.message);
     res.status(500).json({ error: 'Failed to load stock movement' });
