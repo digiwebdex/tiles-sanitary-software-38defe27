@@ -886,7 +886,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     const oldItems = await db('sale_items')
       .where({ sale_id: saleId })
-      .select('id', 'product_id', 'quantity', 'available_qty_at_sale');
+      .select('id', 'product_id', 'quantity', 'available_qty_at_sale', 'box_qty', 'piece_qty', 'total_pieces');
 
     // ── Pre-tx: customer find/create ──
     const customerName = input.customer_name.trim();
@@ -915,7 +915,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       db('products')
         .whereIn('id', productIds)
         .andWhere({ dealer_id: dealerId })
-        .select('id', 'unit_type', 'per_box_sft'),
+        .select('id', 'unit_type', 'per_box_sft', 'pieces_per_box'),
       db('stock')
         .where({ dealer_id: dealerId })
         .whereIn('product_id', productIds)
@@ -935,20 +935,49 @@ router.put('/:id', async (req: Request, res: Response) => {
       const stock: any = stockMap.get(item.product_id);
       const avgCost = stock ? Number(stock.average_cost_per_unit) : 0;
       const unitType = (product?.unit_type ?? 'piece') as 'box_sft' | 'piece';
-      const perBoxSft = product?.per_box_sft ?? 0;
+      const perBoxSft = Number(product?.per_box_sft ?? 0);
+      const ppb = Math.max(1, Math.floor(Number(product?.pieces_per_box ?? 1)) || 1);
+
+      let boxQty: number;
+      let pieceQty: number;
+      if (item.box_qty != null || item.piece_qty != null) {
+        boxQty = Number(item.box_qty ?? 0);
+        pieceQty = Number(item.piece_qty ?? 0);
+      } else if (unitType === 'box_sft') {
+        boxQty = Math.floor(item.quantity);
+        pieceQty = Math.round((item.quantity - boxQty) * ppb);
+      } else {
+        boxQty = 0;
+        pieceQty = item.quantity;
+      }
+      const totalPiecesItem = boxQty * ppb + pieceQty;
+      const effectiveQty =
+        unitType === 'box_sft' ? boxQty + pieceQty / ppb : pieceQty || item.quantity;
+
       let itemTotal: number;
       let itemSft: number | null = null;
       if (unitType === 'box_sft') {
-        totalBox += item.quantity;
-        itemSft = item.quantity * perBoxSft;
+        totalBox += effectiveQty;
+        itemSft = effectiveQty * perBoxSft;
         totalSft += itemSft;
         itemTotal = itemSft * item.sale_rate;
       } else {
-        totalPiece += item.quantity;
-        itemTotal = item.quantity * item.sale_rate;
+        totalPiece += effectiveQty;
+        itemTotal = effectiveQty * item.sale_rate;
       }
-      totalCogs += item.quantity * avgCost;
-      return { ...item, unitType, perBoxSft, total: itemTotal, total_sft: itemSft };
+      totalCogs += effectiveQty * avgCost;
+      return {
+        ...item,
+        quantity: effectiveQty,
+        box_qty: boxQty,
+        piece_qty: pieceQty,
+        total_pieces: totalPiecesItem,
+        pieces_per_box: ppb,
+        unitType,
+        perBoxSft,
+        total: itemTotal,
+        total_sft: itemSft,
+      };
     });
 
     const subtotal = itemsCalc.reduce((s, i) => s + i.total, 0);
@@ -958,13 +987,20 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     // ── Atomic transaction ──
     await db.transaction(async (trx) => {
-      // 1. Restore old stock (batched + unbatched)
+      // 1. Restore old stock (batched + unbatched) + write stock_ledger restore row
       for (const it of oldItems) {
         const prod: any = await trx('products')
           .where({ id: it.product_id })
-          .first('unit_type', 'per_box_sft');
+          .first('unit_type', 'per_box_sft', 'pieces_per_box');
         const unitType = (prod?.unit_type ?? 'piece') as 'box_sft' | 'piece';
-        const perBoxSft = prod?.per_box_sft ?? 0;
+        const perBoxSft = Number(prod?.per_box_sft ?? 0);
+        const ppb = Math.max(1, Math.floor(Number(prod?.pieces_per_box ?? 1)) || 1);
+
+        const stockBeforeRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: it.product_id })
+          .forUpdate()
+          .first('total_pieces');
+        const stockBeforePieces = Number(stockBeforeRow?.total_pieces ?? 0);
 
         const batchAllocs = await trx('sale_item_batches')
           .where({ sale_item_id: it.id })
@@ -975,7 +1011,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         );
 
         // Atomic batch restore (also restores aggregate for batched portion +
-        // deletes sale_item_batches rows).
+        // deletes sale_item_batches rows; total_pieces handled inside RPC).
         await trx.raw(
           'SELECT public.restore_sale_batches(?, ?, ?, ?, ?)',
           [it.id, it.product_id, dealerId, unitType, perBoxSft],
@@ -984,10 +1020,10 @@ router.put('/:id', async (req: Request, res: Response) => {
         // Restore unbatched portion (legacy stock)
         const unbatchedQty = Number(it.quantity) - batchAllocated;
         if (unbatchedQty > 0) {
+          const restorePieces = unitType === 'box_sft' ? unbatchedQty * ppb : unbatchedQty;
           if (unitType === 'box_sft') {
             const stockRow = await trx('stock')
               .where({ product_id: it.product_id, dealer_id: dealerId })
-              .forUpdate()
               .first();
             if (stockRow) {
               const newBox = Number(stockRow.box_qty) + unbatchedQty;
@@ -995,15 +1031,39 @@ router.put('/:id', async (req: Request, res: Response) => {
                 .where({ id: stockRow.id })
                 .update({
                   box_qty: newBox,
-                  sft_qty: newBox * (perBoxSft ?? 0),
+                  sft_qty: newBox * perBoxSft,
+                  total_pieces: Number(stockRow.total_pieces ?? 0) + restorePieces,
                 });
             }
           } else {
             await trx('stock')
               .where({ product_id: it.product_id, dealer_id: dealerId })
-              .increment('piece_qty', unbatchedQty);
+              .increment({ piece_qty: unbatchedQty, total_pieces: restorePieces });
           }
         }
+
+        // stock_ledger restore audit row
+        const stockAfterRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: it.product_id })
+          .first('total_pieces');
+        const stockAfterPieces = Number(stockAfterRow?.total_pieces ?? 0);
+        await trx('stock_ledger').insert({
+          dealer_id: dealerId,
+          product_id: it.product_id,
+          txn_type: 'sale_update_in',
+          reference_table: 'sales',
+          reference_id: saleId,
+          reference_no: oldSale.invoice_number,
+          box_qty: Number(it.box_qty ?? 0),
+          piece_qty: Number(it.piece_qty ?? 0),
+          pieces_per_box: ppb,
+          total_pieces: Number(it.total_pieces ?? Number(it.quantity) * ppb),
+          stock_before_pieces: stockBeforePieces,
+          stock_after_pieces: stockAfterPieces,
+          stock_before_display: formatBoxPiece(stockBeforePieces, ppb),
+          stock_after_display: formatBoxPiece(stockAfterPieces, ppb),
+          created_by: userId,
+        });
       }
 
       // 2. Delete old ledger entries
@@ -1048,6 +1108,9 @@ router.put('/:id', async (req: Request, res: Response) => {
         dealer_id: dealerId,
         product_id: item.product_id,
         quantity: item.quantity,
+        box_qty: item.box_qty,
+        piece_qty: item.piece_qty,
+        total_pieces: item.total_pieces,
         sale_rate: item.sale_rate,
         total: item.total,
         total_sft: item.total_sft,
@@ -1066,6 +1129,12 @@ router.put('/:id', async (req: Request, res: Response) => {
         const saleItemId = saleItemIdsByIndex[idx];
         const deductQty = item.quantity;
         if (deductQty <= 0) continue;
+
+        const stockBeforeRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: item.product_id })
+          .forUpdate()
+          .first('total_pieces');
+        const stockBeforePieces = Number(stockBeforeRow?.total_pieces ?? 0);
 
         const batches = await trx('product_batches')
           .where({ dealer_id: dealerId, product_id: item.product_id, status: 'active' })
@@ -1117,6 +1186,29 @@ router.put('/:id', async (req: Request, res: Response) => {
             );
           }
         }
+
+        // Stock ledger audit row (sale_update_out)
+        const stockAfterRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: item.product_id })
+          .first('total_pieces');
+        const stockAfterPieces = Number(stockAfterRow?.total_pieces ?? 0);
+        await trx('stock_ledger').insert({
+          dealer_id: dealerId,
+          product_id: item.product_id,
+          txn_type: 'sale_update_out',
+          reference_table: 'sales',
+          reference_id: saleId,
+          reference_no: oldSale.invoice_number,
+          box_qty: -Number(item.box_qty),
+          piece_qty: -Number(item.piece_qty),
+          pieces_per_box: item.pieces_per_box,
+          total_pieces: -Number(item.total_pieces),
+          stock_before_pieces: stockBeforePieces,
+          stock_after_pieces: stockAfterPieces,
+          stock_before_display: formatBoxPiece(stockBeforePieces, item.pieces_per_box),
+          stock_after_display: formatBoxPiece(stockAfterPieces, item.pieces_per_box),
+          created_by: userId,
+        });
       }
 
       // 7. Re-create ledger entries
@@ -1210,7 +1302,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     const items = await db('sale_items')
       .where({ sale_id: saleId })
-      .select('id', 'product_id', 'quantity', 'available_qty_at_sale');
+      .select('id', 'product_id', 'quantity', 'available_qty_at_sale', 'box_qty', 'piece_qty', 'total_pieces');
 
     const challans = await db('challans')
       .where({ sale_id: saleId, dealer_id: dealerId })
@@ -1240,13 +1332,20 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     // ── Atomic transaction ──
     await db.transaction(async (trx) => {
-      // 1. Restore stock per item (batched via RPC + unbatched remainder)
+      // 1. Restore stock per item (batched via RPC + unbatched remainder) + ledger
       for (const it of items) {
         const prod: any = await trx('products')
           .where({ id: it.product_id })
-          .first('unit_type', 'per_box_sft');
+          .first('unit_type', 'per_box_sft', 'pieces_per_box');
         const unitType = (prod?.unit_type ?? 'piece') as 'box_sft' | 'piece';
-        const perBoxSft = prod?.per_box_sft ?? 0;
+        const perBoxSft = Number(prod?.per_box_sft ?? 0);
+        const ppb = Math.max(1, Math.floor(Number(prod?.pieces_per_box ?? 1)) || 1);
+
+        const stockBeforeRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: it.product_id })
+          .forUpdate()
+          .first('total_pieces');
+        const stockBeforePieces = Number(stockBeforeRow?.total_pieces ?? 0);
 
         const batchAllocs = await trx('sale_item_batches')
           .where({ sale_item_id: it.id })
@@ -1267,10 +1366,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
         );
         const unbatchedQty = deductedQty - batchAllocated;
         if (unbatchedQty > 0) {
+          const restorePieces = unitType === 'box_sft' ? unbatchedQty * ppb : unbatchedQty;
           if (unitType === 'box_sft') {
             const stockRow = await trx('stock')
               .where({ product_id: it.product_id, dealer_id: dealerId })
-              .forUpdate()
               .first();
             if (stockRow) {
               const newBox = Number(stockRow.box_qty) + unbatchedQty;
@@ -1278,15 +1377,39 @@ router.delete('/:id', async (req: Request, res: Response) => {
                 .where({ id: stockRow.id })
                 .update({
                   box_qty: newBox,
-                  sft_qty: newBox * (perBoxSft ?? 0),
+                  sft_qty: newBox * perBoxSft,
+                  total_pieces: Number(stockRow.total_pieces ?? 0) + restorePieces,
                 });
             }
           } else {
             await trx('stock')
               .where({ product_id: it.product_id, dealer_id: dealerId })
-              .increment('piece_qty', unbatchedQty);
+              .increment({ piece_qty: unbatchedQty, total_pieces: restorePieces });
           }
         }
+
+        // stock_ledger restore audit row (sale_cancel_in)
+        const stockAfterRow = await trx('stock')
+          .where({ dealer_id: dealerId, product_id: it.product_id })
+          .first('total_pieces');
+        const stockAfterPieces = Number(stockAfterRow?.total_pieces ?? 0);
+        await trx('stock_ledger').insert({
+          dealer_id: dealerId,
+          product_id: it.product_id,
+          txn_type: 'sale_cancel_in',
+          reference_table: 'sales',
+          reference_id: saleId,
+          reference_no: sale.invoice_number,
+          box_qty: Number(it.box_qty ?? 0),
+          piece_qty: Number(it.piece_qty ?? 0),
+          pieces_per_box: ppb,
+          total_pieces: Number(it.total_pieces ?? Number(it.quantity) * ppb),
+          stock_before_pieces: stockBeforePieces,
+          stock_after_pieces: stockAfterPieces,
+          stock_before_display: formatBoxPiece(stockBeforePieces, ppb),
+          stock_after_display: formatBoxPiece(stockAfterPieces, ppb),
+          created_by: userId,
+        });
       }
 
       // 2. Delete backorder allocations
