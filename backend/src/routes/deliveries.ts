@@ -495,6 +495,7 @@ router.get('/', async (req: Request, res: Response) => {
           'di.quantity',
           'p.name as product_name',
           'p.unit_type as product_unit_type',
+          'p.pieces_per_box as product_ppb',
         ),
     ]);
 
@@ -519,7 +520,11 @@ router.get('/', async (req: Request, res: Response) => {
       arr.push({
         id: it.id,
         quantity: Number(it.quantity),
-        products: { name: it.product_name, unit_type: it.product_unit_type },
+        products: {
+          name: it.product_name,
+          unit_type: it.product_unit_type,
+          pieces_per_box: Number(it.product_ppb) || 1,
+        },
       });
       itemsByDelivery.set(it.delivery_id, arr);
     }
