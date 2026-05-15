@@ -796,7 +796,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
         <CreateReservationDialog
           open={!!reserveProduct}
           onOpenChange={(open) => { if (!open) setReserveProduct(null); }}
-          product={reserveProduct}
+          product={{ ...reserveProduct, pieces_per_box: Number((reserveProduct as any).pieces_per_box) || 1 }}
           dealerId={dealerId}
         />
       )}

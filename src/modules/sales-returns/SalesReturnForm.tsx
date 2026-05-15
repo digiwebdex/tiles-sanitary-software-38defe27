@@ -80,6 +80,18 @@ const SalesReturnForm = ({ dealerId, onSubmit, isLoading }: SalesReturnFormProps
   const watchProductId = form.watch("product_id");
   const watchRefund = form.watch("refund_amount");
   const selectedItem = saleItems.find((i: any) => i.product_id === watchProductId);
+  const isTile = selectedItem?.products?.unit_type === "box_sft";
+  const ppb = Math.max(1, Number(selectedItem?.products?.pieces_per_box ?? 1));
+  const boxPart = Math.floor(watchQty || 0);
+  const piecePart = Math.round(((watchQty || 0) - boxPart) * ppb);
+
+  const setQtyFromBoxPiece = (box: number, piece: number) => {
+    const total = (Number(box) || 0) + (Number(piece) || 0) / ppb;
+    form.setValue("qty", total);
+    if (selectedItem) {
+      form.setValue("refund_amount", total * Number(selectedItem.sale_rate));
+    }
+  };
 
   const selectProduct = (productId: string) => {
     form.setValue("product_id", productId);
@@ -229,29 +241,58 @@ const SalesReturnForm = ({ dealerId, onSubmit, isLoading }: SalesReturnFormProps
                       </TableCell>
                       <TableCell className="text-sm">{formatCurrency(Number(selectedItem.sale_rate))}</TableCell>
                       <TableCell>
-                        <FormField
-                          control={form.control}
-                          name="qty"
-                          render={({ field }) => (
-                            <FormItem className="space-y-0">
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  max={Number(selectedItem.quantity)}
-                                  className="h-8 w-24 text-sm"
-                                  {...field}
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    const qty = parseFloat(e.target.value) || 0;
-                                    form.setValue("refund_amount", qty * Number(selectedItem.sale_rate));
-                                  }}
-                                />
-                              </FormControl>
-                              <p className="text-xs text-muted-foreground mt-0.5">Max: {Number(selectedItem.quantity)}</p>
-                            </FormItem>
-                          )}
-                        />
+                        {isTile ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min={0}
+                                step="1"
+                                className="h-8 w-16 text-sm"
+                                value={boxPart}
+                                onChange={(e) => setQtyFromBoxPiece(parseInt(e.target.value) || 0, piecePart)}
+                              />
+                              <span className="text-xs text-muted-foreground">box</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={ppb - 1}
+                                step="1"
+                                className="h-8 w-16 text-sm"
+                                value={piecePart}
+                                onChange={(e) => setQtyFromBoxPiece(boxPart, parseInt(e.target.value) || 0)}
+                              />
+                              <span className="text-xs text-muted-foreground">pc</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              = {(watchQty || 0).toFixed(3)} box · Max sold: {Number(selectedItem.quantity)}
+                            </p>
+                          </div>
+                        ) : (
+                          <FormField
+                            control={form.control}
+                            name="qty"
+                            render={({ field }) => (
+                              <FormItem className="space-y-0">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    max={Number(selectedItem.quantity)}
+                                    className="h-8 w-24 text-sm"
+                                    {...field}
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      const qty = parseFloat(e.target.value) || 0;
+                                      form.setValue("refund_amount", qty * Number(selectedItem.sale_rate));
+                                    }}
+                                  />
+                                </FormControl>
+                                <p className="text-xs text-muted-foreground mt-0.5">Max: {Number(selectedItem.quantity)}</p>
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium text-sm">
                         {formatCurrency(watchRefund || 0)}

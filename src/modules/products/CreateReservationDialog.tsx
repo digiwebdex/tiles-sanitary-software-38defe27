@@ -26,6 +26,7 @@ interface CreateReservationDialogProps {
     unit_type: string;
     category: string;
     per_box_sft: number | null;
+    pieces_per_box?: number | null;
   };
   dealerId: string;
 }
@@ -38,11 +39,15 @@ const CreateReservationDialog = ({
   const [customerId, setCustomerId] = useState("");
   const [batchId, setBatchId] = useState<string>("");
   const [qty, setQty] = useState("");
+  const [boxQty, setBoxQty] = useState("");
+  const [pieceQty, setPieceQty] = useState("");
   const [reason, setReason] = useState("");
   const [expiryDays, setExpiryDays] = useState("7");
 
   const isTiles = product.category === "tiles";
   const unitLabel = product.unit_type === "box_sft" ? "Box" : "Pcs";
+  const ppb = Math.max(1, Number(product.pieces_per_box ?? 1));
+  const useDual = product.unit_type === "box_sft";
 
   // Phase 3U-30: VPS GET /api/customers (active only).
   const { data: customers = [] } = useQuery({
@@ -115,8 +120,18 @@ const CreateReservationDialog = ({
     setCustomerId("");
     setBatchId("");
     setQty("");
+    setBoxQty("");
+    setPieceQty("");
     setReason("");
     setExpiryDays("7");
+  };
+
+  // Sync dual Box+Pc inputs to single qty (in boxes, fractional)
+  const syncDualQty = (b: string, p: string) => {
+    setBoxQty(b);
+    setPieceQty(p);
+    const total = (Number(b) || 0) + (Number(p) || 0) / ppb;
+    setQty(total > 0 ? String(total) : "");
   };
 
   return (
@@ -175,15 +190,48 @@ const CreateReservationDialog = ({
 
           {/* Quantity */}
           <div className="space-y-1.5">
-            <Label>Quantity ({unitLabel}) *</Label>
-            <Input
-              type="number"
-              min="1"
-              max={freeQty ?? undefined}
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              placeholder={`Enter ${unitLabel.toLowerCase()}`}
-            />
+            <Label>Quantity {useDual ? "(Box + Pc)" : `(${unitLabel})`} *</Label>
+            {useDual ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={boxQty}
+                    onChange={(e) => syncDualQty(e.target.value, pieceQty)}
+                    placeholder="Box"
+                    className="w-24"
+                  />
+                  <span className="text-xs text-muted-foreground">box</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    max={ppb - 1}
+                    step="1"
+                    value={pieceQty}
+                    onChange={(e) => syncDualQty(boxQty, e.target.value)}
+                    placeholder="Pc"
+                    className="w-24"
+                  />
+                  <span className="text-xs text-muted-foreground">pc</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  = {Number(qty || 0).toFixed(3)} box
+                  {product.per_box_sft ? ` · ${(Number(qty || 0) * Number(product.per_box_sft)).toFixed(2)} sft` : ""}
+                  {freeQty !== null ? ` · Free: ${freeQty} box` : ""}
+                </p>
+              </>
+            ) : (
+              <Input
+                type="number"
+                min="1"
+                max={freeQty ?? undefined}
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                placeholder={`Enter ${unitLabel.toLowerCase()}`}
+              />
+            )}
           </div>
 
           {/* Expiry */}
