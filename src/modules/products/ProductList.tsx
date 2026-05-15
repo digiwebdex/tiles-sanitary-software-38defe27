@@ -597,14 +597,13 @@ const ProductList = ({ dealerId }: ProductListProps) => {
                       )}
                       <TableCell className="text-right">{formatCurrency(p.default_sale_rate)}</TableCell>
                       <TableCell className={`text-right font-medium ${qty < 0 ? "text-destructive" : ""}`}>
-                        {p.unit_type === "box_sft" ? (
-                          <div>
-                            <span>{stockInfo.box} Box</span>
-                            <span className="text-xs text-muted-foreground ml-1">({stockInfo.sft.toFixed(2)} Sft)</span>
-                          </div>
-                        ) : (
-                          <span>{stockInfo.piece} Pcs</span>
-                        )}
+                        <TileStockBadge
+                          totalPieces={stockInfo.totalPieces || (p.unit_type === "box_sft" ? stockInfo.box * (Number(p.pieces_per_box) || 1) : stockInfo.piece)}
+                          piecesPerBox={Number(p.pieces_per_box) || 1}
+                          perBoxSft={Number(p.per_box_sft) || 0}
+                          isTile={p.unit_type === "box_sft"}
+                          className="items-end"
+                        />
                       </TableCell>
                       <TableCell className="min-w-[60px]">{p.unit_type === "box_sft" ? "Sft" : "Piece"}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()} className="sticky right-0 bg-background z-10 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]">
