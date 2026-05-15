@@ -112,6 +112,7 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
         sku: string;
         unit_type: string;
         per_box_sft: number | null;
+        pieces_per_box: number | null;
         category: string;
       }>;
     },
