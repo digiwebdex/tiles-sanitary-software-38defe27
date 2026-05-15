@@ -404,7 +404,7 @@ router.post('/', async (req: Request, res: Response) => {
       db('products')
         .whereIn('id', productIds)
         .andWhere({ dealer_id: dealerId })
-        .select('id', 'unit_type', 'per_box_sft', 'name'),
+        .select('id', 'unit_type', 'per_box_sft', 'name', 'pieces_per_box'),
       db('stock')
         .where({ dealer_id: dealerId })
         .whereIn('product_id', productIds)
@@ -415,6 +415,8 @@ router.post('/', async (req: Request, res: Response) => {
           'piece_qty',
           'reserved_box_qty',
           'reserved_piece_qty',
+          'total_pieces',
+          'reserved_total_pieces',
         ),
     ]);
 
@@ -437,7 +439,31 @@ router.post('/', async (req: Request, res: Response) => {
       const stock: any = stockMap.get(item.product_id);
       const avgCost = stock ? Number(stock.average_cost_per_unit) : 0;
       const unitType = product?.unit_type ?? 'piece';
-      const perBoxSft = product?.per_box_sft ?? 0;
+      const perBoxSft = Number(product?.per_box_sft ?? 0);
+      const ppb = Math.max(1, Math.floor(Number(product?.pieces_per_box ?? 1)) || 1);
+
+      // Resolve box_qty / piece_qty — caller may pass explicit dual-unit
+      // values (Box+Pc UI), or only legacy `quantity`. Backwards-compatible.
+      let boxQty: number;
+      let pieceQty: number;
+      if (item.box_qty != null || item.piece_qty != null) {
+        boxQty = Number(item.box_qty ?? 0);
+        pieceQty = Number(item.piece_qty ?? 0);
+      } else if (unitType === 'box_sft') {
+        // Tile: legacy quantity is in boxes (may be decimal SFT-equivalent).
+        boxQty = Math.floor(item.quantity);
+        const frac = item.quantity - boxQty;
+        pieceQty = Math.round(frac * ppb);
+      } else {
+        boxQty = 0;
+        pieceQty = item.quantity;
+      }
+      const totalPiecesItem = boxQty * ppb + pieceQty;
+
+      // Re-derive `quantity` so legacy code paths (allocator, totals) stay correct.
+      // For tiles we send a decimal box-equivalent; for piece units we send pieces.
+      const effectiveQty =
+        unitType === 'box_sft' ? boxQty + pieceQty / ppb : pieceQty || item.quantity;
 
       const totalQty =
         unitType === 'box_sft' ? Number(stock?.box_qty ?? 0) : Number(stock?.piece_qty ?? 0);
@@ -446,11 +472,22 @@ router.post('/', async (req: Request, res: Response) => {
           ? Number(stock?.reserved_box_qty ?? 0)
           : Number(stock?.reserved_piece_qty ?? 0);
       const availableQty = totalQty - reservedQty;
-      const shortage = Math.max(0, item.quantity - availableQty);
+      const shortage = Math.max(0, effectiveQty - availableQty);
 
       if (shortage > 0 && !backorderEnabled) {
+        const ppbForMsg = ppb;
+        const availDisplay =
+          unitType === 'box_sft'
+            ? formatBoxPiece(
+                Number(stock?.total_pieces ?? availableQty * ppb) -
+                  Number(stock?.reserved_total_pieces ?? 0),
+                ppbForMsg,
+              )
+            : `${availableQty} pcs`;
+        const reqDisplay =
+          unitType === 'box_sft' ? formatBoxPiece(totalPiecesItem, ppbForMsg) : `${pieceQty} pcs`;
         throw new Error(
-          `Insufficient stock for ${product?.name ?? 'product'}. Available: ${availableQty}, Requested: ${item.quantity}. Enable "Allow Sale Below Stock" in dealer settings.`,
+          `Insufficient stock for ${product?.name ?? 'product'}. Available: ${availDisplay}, Requested: ${reqDisplay}. Enable "Allow Sale Below Stock" in dealer settings.`,
         );
       }
       if (shortage > 0) hasBackorder = true;
@@ -458,19 +495,24 @@ router.post('/', async (req: Request, res: Response) => {
       let itemTotal: number;
       let itemSft: number | null = null;
       if (unitType === 'box_sft') {
-        totalBox += item.quantity;
-        itemSft = item.quantity * perBoxSft;
+        totalBox += effectiveQty;
+        itemSft = effectiveQty * perBoxSft;
         totalSft += itemSft;
         itemTotal = itemSft * item.sale_rate;
       } else {
-        totalPiece += item.quantity;
-        itemTotal = item.quantity * item.sale_rate;
+        totalPiece += effectiveQty;
+        itemTotal = effectiveQty * item.sale_rate;
       }
 
-      totalCogs += item.quantity * avgCost;
+      totalCogs += effectiveQty * avgCost;
 
       return {
         ...item,
+        quantity: effectiveQty,
+        box_qty: boxQty,
+        piece_qty: pieceQty,
+        total_pieces: totalPiecesItem,
+        pieces_per_box: ppb,
         unitType: unitType as 'box_sft' | 'piece',
         perBoxSft,
         total: itemTotal,
