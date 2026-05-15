@@ -88,7 +88,7 @@ router.get('/stock', async (req, res) => {
 
     const products = await pq
       .clone()
-      .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'reorder_level')
+      .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'pieces_per_box', 'reorder_level')
       .offset((page - 1) * PAGE_SIZE)
       .limit(PAGE_SIZE);
 
@@ -118,6 +118,7 @@ router.get('/stock', async (req, res) => {
         brand: p.brand,
         category: p.category,
         unitType: p.unit_type,
+        piecesPerBox: Number(p.pieces_per_box) || 1,
         boxQty,
         sftQty,
         pieceQty,
@@ -684,7 +685,7 @@ router.get('/inventory-aging', async (req, res) => {
       db('products')
         .where({ dealer_id: dealerId, active: true })
         .orderBy('sku')
-        .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'per_box_sft', 'reorder_level'),
+        .select('id', 'sku', 'name', 'brand', 'category', 'unit_type', 'per_box_sft', 'pieces_per_box', 'reorder_level'),
       db('stock')
         .where({ dealer_id: dealerId })
         .select('product_id', 'box_qty', 'sft_qty', 'piece_qty', 'average_cost_per_unit'),
@@ -775,6 +776,7 @@ router.get('/inventory-aging', async (req, res) => {
         brand: product.brand,
         category: product.category,
         unitType: product.unit_type,
+        piecesPerBox: Number(product.pieces_per_box) || 1,
         boxQty, sftQty, pieceQty, avgCostPerUnit,
         fifoStockValue: round2(fifoValue),
         lastSaleDate, daysSinceLastSale, agingCategory,

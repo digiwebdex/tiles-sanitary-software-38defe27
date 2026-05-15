@@ -41,6 +41,7 @@ import ReservationListDialog from "./ReservationListDialog";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useDealerInfo } from "@/hooks/useDealerInfo";
 import { exportToExcel } from "@/lib/exportUtils";
+import { formatStockUnit } from "@/lib/units";
 
 interface ProductListProps {
   dealerId: string;
@@ -326,12 +327,16 @@ const ProductList = ({ dealerId }: ProductListProps) => {
     const exportData = products.map((p) => {
       const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
       const avgCost = costData?.get(p.id) ?? 0;
+      const isTile = p.unit_type === "box_sft";
+      const ppb = Number((p as any).pieces_per_box) || 1;
+      const qty = isTile ? si.box : si.piece;
       return {
         sku: p.sku,
         name: p.name,
         brand: p.brand || "",
         category: p.category,
-        unitType: p.unit_type === "box_sft" ? "Box/Sft" : "Piece",
+        unitType: isTile ? "Box/Sft" : "Piece",
+        stock: formatStockUnit(qty, ppb, isTile),
         boxQty: si.box,
         sftQty: si.sft,
         pieceQty: si.piece,
@@ -346,6 +351,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
       { header: "Brand", key: "brand" },
       { header: "Category", key: "category" },
       { header: "Unit Type", key: "unitType" },
+      { header: "Stock", key: "stock" },
       { header: "Box Qty", key: "boxQty", format: "number" as const },
       { header: "SFT Qty", key: "sftQty", format: "number" as const },
       { header: "Piece Qty", key: "pieceQty", format: "number" as const },

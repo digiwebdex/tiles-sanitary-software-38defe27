@@ -1348,8 +1348,47 @@ function InventoryAgingReport({ dealerId }: { dealerId: string }) {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-base">Inventory Valuation &amp; Aging (FIFO)</CardTitle>
+          {rows.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const exportData = rows.map((r) => {
+                  const isTile = r.unitType === "box_sft";
+                  const ppb = r.piecesPerBox || 1;
+                  const qty = isTile ? r.boxQty : r.pieceQty;
+                  return {
+                    sku: r.sku,
+                    name: r.name,
+                    brand: r.brand ?? "",
+                    category: r.category,
+                    stock: formatStockUnit(qty, ppb, isTile),
+                    avgRate: r.avgCostPerUnit,
+                    fifoValue: r.fifoStockValue,
+                    lastSale: r.lastSaleDate ?? "Never",
+                    daysSinceLastSale: r.daysSinceLastSale ?? "",
+                    aging: AGING_META[r.agingCategory].label,
+                  };
+                });
+                exportToExcel(exportData, [
+                  { header: "SKU", key: "sku" },
+                  { header: "Product", key: "name" },
+                  { header: "Brand", key: "brand" },
+                  { header: "Category", key: "category" },
+                  { header: "Available Stock", key: "stock" },
+                  { header: "Avg Rate", key: "avgRate", format: "currency" as const },
+                  { header: "FIFO Value", key: "fifoValue", format: "currency" as const },
+                  { header: "Last Sale", key: "lastSale" },
+                  { header: "Days Since Last Sale", key: "daysSinceLastSale" },
+                  { header: "Aging", key: "aging" },
+                ], `inventory-aging-${new Date().toISOString().split("T")[0]}`);
+              }}
+            >
+              Export Excel
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -1364,9 +1403,7 @@ function InventoryAgingReport({ dealerId }: { dealerId: string }) {
                     <TableHead>SKU</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Avail. Box</TableHead>
-                    <TableHead className="text-right">Avail. SFT</TableHead>
-                    <TableHead className="text-right">Avail. Pcs</TableHead>
+                    <TableHead className="text-right">Available Stock</TableHead>
                     <TableHead className="text-right">Avg Rate</TableHead>
                     <TableHead className="text-right">FIFO Value</TableHead>
                     <TableHead className="text-right">Last Sale</TableHead>
@@ -1376,6 +1413,9 @@ function InventoryAgingReport({ dealerId }: { dealerId: string }) {
                 <TableBody>
                   {rows.map((r) => {
                     const meta = AGING_META[r.agingCategory];
+                    const isTile = r.unitType === "box_sft";
+                    const ppb = r.piecesPerBox || 1;
+                    const qty = isTile ? r.boxQty : r.pieceQty;
                     return (
                       <TableRow key={r.productId} className={meta.rowClass}>
                         <TableCell className="font-mono text-sm">{r.sku}</TableCell>
@@ -1388,14 +1428,8 @@ function InventoryAgingReport({ dealerId }: { dealerId: string }) {
                         <TableCell>
                           <Badge variant="outline" className="capitalize text-xs">{r.category}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          {r.unitType === "box_sft" ? r.boxQty : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {r.unitType === "box_sft" ? r.sftQty.toFixed(2) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {r.unitType === "piece" ? r.pieceQty : "—"}
+                        <TableCell className="text-right font-medium">
+                          {formatStockUnit(qty, ppb, isTile)}
                         </TableCell>
                         <TableCell className="text-right">{formatCurrency(r.avgCostPerUnit)}</TableCell>
                         <TableCell className="text-right font-semibold text-primary">
@@ -1417,7 +1451,7 @@ function InventoryAgingReport({ dealerId }: { dealerId: string }) {
                   })}
                   {/* Totals row */}
                   <TableRow className="bg-muted/50 font-semibold">
-                    <TableCell colSpan={7}>Total</TableCell>
+                    <TableCell colSpan={5}>Total</TableCell>
                     <TableCell className="text-right text-primary">{formatCurrency(totalFifoValue)}</TableCell>
                     <TableCell colSpan={2} />
                   </TableRow>
@@ -1460,11 +1494,45 @@ function LowStockReport({ dealerId }: { dealerId: string }) {
         </div>
       )}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-base flex items-center gap-2">
             <span>Low Stock Report</span>
             {rows.length > 0 && <Badge variant="destructive" className="text-xs">{rows.length} items</Badge>}
           </CardTitle>
+          {rows.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const exportData = rows.map((r) => {
+                  const isTile = r.unitType === "box_sft";
+                  const ppb = r.piecesPerBox || 1;
+                  return {
+                    sku: r.sku,
+                    name: r.name,
+                    brand: r.brand ?? "",
+                    category: r.category,
+                    reorderLevel: formatStockUnit(r.reorderLevel, ppb, isTile),
+                    currentStock: formatStockUnit(r.currentStock, ppb, isTile),
+                    suggested: formatStockUnit(r.suggestedReorderQty, ppb, isTile),
+                    status: r.currentStock === 0 ? "Out of Stock" : "Low Stock",
+                  };
+                });
+                exportToExcel(exportData, [
+                  { header: "SKU", key: "sku" },
+                  { header: "Product", key: "name" },
+                  { header: "Brand", key: "brand" },
+                  { header: "Category", key: "category" },
+                  { header: "Reorder Level", key: "reorderLevel" },
+                  { header: "Current Stock", key: "currentStock" },
+                  { header: "Suggested Reorder Qty", key: "suggested" },
+                  { header: "Status", key: "status" },
+                ], `low-stock-${new Date().toISOString().split("T")[0]}`);
+              }}
+            >
+              Export Excel
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
