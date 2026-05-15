@@ -323,7 +323,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
       return;
     }
     const exportData = products.map((p) => {
-      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, reservedBox: 0, reservedPiece: 0 };
+      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
       const avgCost = costData?.get(p.id) ?? 0;
       return {
         sku: p.sku,
@@ -539,7 +539,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((p) => {
-                  const stockInfo = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, reservedBox: 0, reservedPiece: 0 };
+                  const stockInfo = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
                   const qty = stockInfo.total;
                   const costPerUnit = Math.max(0, costData?.get(p.id) ?? 0);
                   const reorder = p.reorder_level ?? 0;
@@ -632,7 +632,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
                 {filteredProducts.length > 0 && (() => {
                   const totals = filteredProducts.reduce(
                     (acc, p) => {
-                      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, reservedBox: 0, reservedPiece: 0 };
+                      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
                       acc.box += si.box;
                       acc.sft += si.sft;
                       acc.piece += si.piece;
