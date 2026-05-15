@@ -35,6 +35,7 @@ import { z } from 'zod';
 import { db } from '../db/connection';
 import { authenticate } from '../middleware/auth';
 import { tenantGuard } from '../middleware/tenant';
+import { formatBoxPiece } from '../lib/units';
 
 const router = Router();
 router.use(authenticate, tenantGuard);
