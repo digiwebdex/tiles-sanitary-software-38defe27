@@ -1494,11 +1494,45 @@ function LowStockReport({ dealerId }: { dealerId: string }) {
         </div>
       )}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-base flex items-center gap-2">
             <span>Low Stock Report</span>
             {rows.length > 0 && <Badge variant="destructive" className="text-xs">{rows.length} items</Badge>}
           </CardTitle>
+          {rows.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const exportData = rows.map((r) => {
+                  const isTile = r.unitType === "box_sft";
+                  const ppb = r.piecesPerBox || 1;
+                  return {
+                    sku: r.sku,
+                    name: r.name,
+                    brand: r.brand ?? "",
+                    category: r.category,
+                    reorderLevel: formatStockUnit(r.reorderLevel, ppb, isTile),
+                    currentStock: formatStockUnit(r.currentStock, ppb, isTile),
+                    suggested: formatStockUnit(r.suggestedReorderQty, ppb, isTile),
+                    status: r.currentStock === 0 ? "Out of Stock" : "Low Stock",
+                  };
+                });
+                exportToExcel(exportData, [
+                  { header: "SKU", key: "sku" },
+                  { header: "Product", key: "name" },
+                  { header: "Brand", key: "brand" },
+                  { header: "Category", key: "category" },
+                  { header: "Reorder Level", key: "reorderLevel" },
+                  { header: "Current Stock", key: "currentStock" },
+                  { header: "Suggested Reorder Qty", key: "suggested" },
+                  { header: "Status", key: "status" },
+                ], `low-stock-${new Date().toISOString().split("T")[0]}`);
+              }}
+            >
+              Export Excel
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
