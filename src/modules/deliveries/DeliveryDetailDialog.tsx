@@ -252,7 +252,7 @@ const DeliveryDetailDialog = ({ deliveryId, dealerId, onClose }: Props) => {
                     {saleItems.map((si: any) => {
                       const product = si.products;
                       const isBox = product?.unit_type === "box_sft";
-                      const unit = isBox ? "box" : "pc";
+                      const ppb = Number(product?.pieces_per_box) || 1;
                       const ordered = Number(si.quantity);
                       const delivered = deliveredQtyMap[si.id] || 0;
                       const remaining = Math.max(0, ordered - delivered);
@@ -263,14 +263,14 @@ const DeliveryDetailDialog = ({ deliveryId, dealerId, onClose }: Props) => {
                           <div className="flex items-center justify-between text-sm">
                             <span className="font-medium">{product?.name}</span>
                             <span className="text-muted-foreground">
-                              {delivered}/{ordered} {unit}
+                              {formatStockUnit(delivered, ppb, isBox)} / {formatStockUnit(ordered, ppb, isBox)}
                             </span>
                           </div>
                           <Progress value={Math.min(progress, 100)} className="h-2" />
                           <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Delivered: {delivered} {unit}</span>
+                            <span>Delivered: {formatStockUnit(delivered, ppb, isBox)}</span>
                             <span className={remaining > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
-                              {remaining > 0 ? `Remaining: ${remaining} ${unit}` : "Complete ✓"}
+                              {remaining > 0 ? `Remaining: ${formatStockUnit(remaining, ppb, isBox)}` : "Complete ✓"}
                             </span>
                           </div>
                         </div>
