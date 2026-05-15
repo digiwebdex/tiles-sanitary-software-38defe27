@@ -21,6 +21,7 @@ import {
   Plus, Search, AlertTriangle, Printer, Download, Upload, Lock,
 } from "lucide-react";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
+import { TileStockBadge } from "@/components/TileStockBadge";
 import BarcodePrintDialog from "./BarcodePrintDialog";
 import ProductDetailDialog from "./ProductDetailDialog";
 import BrokenStockDialog from "./BrokenStockDialog";
@@ -102,14 +103,15 @@ const ProductList = ({ dealerId }: ProductListProps) => {
       const res = await vpsAuthedFetch(`/api/products/stock-map?dealerId=${dealerId}`);
       const body = await res.json().catch(() => ({} as any));
       if (!res.ok) throw new Error((body as any)?.error || "Failed to load");
-      const map = new Map<string, { total: number; box: number; sft: number; piece: number; reservedBox: number; reservedPiece: number }>();
+      const map = new Map<string, { total: number; box: number; sft: number; piece: number; totalPieces: number; reservedBox: number; reservedPiece: number }>();
       for (const s of (body.rows ?? []) as any[]) {
         const box = Number(s.box_qty) || 0;
         const sft = Number(s.sft_qty) || 0;
         const piece = Number(s.piece_qty) || 0;
+        const totalPieces = Number(s.total_pieces) || 0;
         const reservedBox = Number(s.reserved_box_qty) || 0;
         const reservedPiece = Number(s.reserved_piece_qty) || 0;
-        map.set(s.product_id, { total: box + piece, box, sft, piece, reservedBox, reservedPiece });
+        map.set(s.product_id, { total: box + piece, box, sft, piece, totalPieces, reservedBox, reservedPiece });
       }
       return map;
     },
@@ -322,7 +324,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
       return;
     }
     const exportData = products.map((p) => {
-      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, reservedBox: 0, reservedPiece: 0 };
+      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
       const avgCost = costData?.get(p.id) ?? 0;
       return {
         sku: p.sku,
@@ -538,7 +540,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
               </TableHeader>
               <TableBody>
                 {filteredProducts.map((p) => {
-                  const stockInfo = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, reservedBox: 0, reservedPiece: 0 };
+                  const stockInfo = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
                   const qty = stockInfo.total;
                   const costPerUnit = Math.max(0, costData?.get(p.id) ?? 0);
                   const reorder = p.reorder_level ?? 0;
@@ -596,14 +598,13 @@ const ProductList = ({ dealerId }: ProductListProps) => {
                       )}
                       <TableCell className="text-right">{formatCurrency(p.default_sale_rate)}</TableCell>
                       <TableCell className={`text-right font-medium ${qty < 0 ? "text-destructive" : ""}`}>
-                        {p.unit_type === "box_sft" ? (
-                          <div>
-                            <span>{stockInfo.box} Box</span>
-                            <span className="text-xs text-muted-foreground ml-1">({stockInfo.sft.toFixed(2)} Sft)</span>
-                          </div>
-                        ) : (
-                          <span>{stockInfo.piece} Pcs</span>
-                        )}
+                        <TileStockBadge
+                          totalPieces={stockInfo.totalPieces || (p.unit_type === "box_sft" ? stockInfo.box * (Number((p as any).pieces_per_box) || 1) : stockInfo.piece)}
+                          piecesPerBox={Number((p as any).pieces_per_box) || 1}
+                          perBoxSft={Number(p.per_box_sft) || 0}
+                          isTile={p.unit_type === "box_sft"}
+                          className="items-end"
+                        />
                       </TableCell>
                       <TableCell className="min-w-[60px]">{p.unit_type === "box_sft" ? "Sft" : "Piece"}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()} className="sticky right-0 bg-background z-10 shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]">
@@ -631,7 +632,7 @@ const ProductList = ({ dealerId }: ProductListProps) => {
                 {filteredProducts.length > 0 && (() => {
                   const totals = filteredProducts.reduce(
                     (acc, p) => {
-                      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, reservedBox: 0, reservedPiece: 0 };
+                      const si = stockData?.get(p.id) ?? { total: 0, box: 0, sft: 0, piece: 0, totalPieces: 0, reservedBox: 0, reservedPiece: 0 };
                       acc.box += si.box;
                       acc.sft += si.sft;
                       acc.piece += si.piece;
