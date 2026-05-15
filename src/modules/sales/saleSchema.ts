@@ -3,6 +3,9 @@ import { z } from "zod";
 export const saleItemSchema = z.object({
   product_id: z.string().min(1, "Product is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be > 0"),
+  /** Optional dual-unit fields. When omitted, backend derives from `quantity`. */
+  box_qty: z.coerce.number().min(0).optional(),
+  piece_qty: z.coerce.number().min(0).optional(),
   sale_rate: z.coerce.number().min(0, "Rate must be ≥ 0"),
   rate_source: z.enum(["default", "tier", "manual"]).optional().default("default"),
   tier_id: z.string().nullable().optional(),
