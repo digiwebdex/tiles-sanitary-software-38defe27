@@ -65,3 +65,34 @@ export function isValidBoxPiece(input: Partial<BoxPiece>): boolean {
   const p = safeNum(input.piece);
   return b >= 0 && p >= 0 && (b > 0 || p > 0);
 }
+
+/**
+ * Smart unit-aware formatter for stock/qty display.
+ *
+ *  - Tile (isTile=true, ppb>1):
+ *      6 box 0 pc → "6 box"
+ *      0 box 5 pc → "5 pcs"
+ *      6 box 5 pc → "6 box 5 pcs"
+ *  - Piece products: "N pcs"
+ *
+ * `qty` semantics:
+ *   - When `isTile` is true, `qty` is the (possibly decimal) box-equivalent
+ *     quantity that we use everywhere in sale_items/delivery_items
+ *     (e.g. 6.42 = 6 box 5 pcs when ppb=12). Internally converted to total
+ *     pieces via `qty * ppb`, then split back into normalized box+piece.
+ *   - When `isTile` is false, `qty` is raw piece count.
+ */
+export function formatStockUnit(
+  qty: number,
+  ppb: number | null | undefined,
+  isTile: boolean,
+): string {
+  const n = safeNum(qty);
+  if (!isTile) return `${Math.round(n)} pcs`;
+  const p = safePpb(ppb);
+  const totalPieces = Math.round(n * p);
+  const { box, piece } = fromTotalPieces(totalPieces, p);
+  if (box > 0 && piece > 0) return `${box} box ${piece} pcs`;
+  if (box > 0) return `${box} box`;
+  return `${piece} pcs`;
+}

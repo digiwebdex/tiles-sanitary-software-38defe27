@@ -26,6 +26,7 @@ import {
 } from "@/services/reportService";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import { formatCurrency } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { useAuth } from "@/contexts/AuthContext";
 import { exportToExcel } from "@/lib/exportUtils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -1492,33 +1493,37 @@ function LowStockReport({ dealerId }: { dealerId: string }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r) => (
-                    <TableRow
-                      key={r.productId}
-                      className={r.currentStock === 0 ? "bg-destructive/5" : ""}
-                    >
-                      <TableCell className="font-mono text-sm">{r.sku}</TableCell>
-                      <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell>{r.brand || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize text-xs">{r.category}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{r.reorderLevel}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={r.currentStock === 0 ? "text-destructive font-bold" : "text-destructive font-semibold"}>
-                          {r.currentStock}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-primary">{r.suggestedReorderQty}</TableCell>
-                      <TableCell>
-                        {r.currentStock === 0 ? (
-                          <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs bg-destructive/80">Low Stock</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {rows.map((r) => {
+                    const isTile = r.unitType === "box_sft";
+                    const ppb = r.piecesPerBox || 1;
+                    return (
+                      <TableRow
+                        key={r.productId}
+                        className={r.currentStock === 0 ? "bg-destructive/5" : ""}
+                      >
+                        <TableCell className="font-mono text-sm">{r.sku}</TableCell>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>{r.brand || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize text-xs">{r.category}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{formatStockUnit(r.reorderLevel, ppb, isTile)}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={r.currentStock === 0 ? "text-destructive font-bold" : "text-destructive font-semibold"}>
+                            {formatStockUnit(r.currentStock, ppb, isTile)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-primary">{formatStockUnit(r.suggestedReorderQty, ppb, isTile)}</TableCell>
+                        <TableCell>
+                          {r.currentStock === 0 ? (
+                            <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs bg-destructive/80">Low Stock</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

@@ -22,6 +22,9 @@ export interface DashboardData {
     name: string;
     sku: string;
     category: string;
+    unitType?: string;
+    piecesPerBox?: number;
+    totalPieces?: number;
     currentQty: number;
     reorderLevel: number;
   }[];
