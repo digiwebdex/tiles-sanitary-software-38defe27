@@ -413,7 +413,7 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["report-stock-movement", dealerId, productId, page],
     queryFn: async () => {
-      if (!productId) return { rows: [], total: 0, allRows: [] as any[] };
+      if (!productId) return { rows: [], total: 0, allRows: [] as any[], unitType: "piece", piecesPerBox: 1 };
       const res = await vpsAuthedFetch(
         `/api/reports/stock-movement?dealerId=${dealerId}&productId=${productId}`,
       );
@@ -425,12 +425,21 @@ export function StockMovementReport({ dealerId }: { dealerId: string }) {
       }>;
       const total = allRows.length;
       const paged = allRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-      return { rows: paged, total, allRows };
+      return {
+        rows: paged,
+        total,
+        allRows,
+        unitType: body.unitType ?? "piece",
+        piecesPerBox: Number(body.piecesPerBox) || 1,
+      };
     },
     enabled: !!productId,
   });
 
   const rows = data?.rows ?? [];
+  const isTile = (data?.unitType ?? "piece") === "box_sft";
+  const ppb = data?.piecesPerBox || 1;
+  const fmt = (q: number) => formatStockUnit(q, ppb, isTile);
 
   return (
     <Card>
