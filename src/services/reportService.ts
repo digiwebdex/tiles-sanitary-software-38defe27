@@ -213,6 +213,7 @@ export interface InventoryAgingRow {
   brand: string | null;
   category: string;
   unitType: string;
+  piecesPerBox: number;
   boxQty: number;
   sftQty: number;
   pieceQty: number;
