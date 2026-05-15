@@ -118,6 +118,7 @@ router.get('/stock', async (req, res) => {
         brand: p.brand,
         category: p.category,
         unitType: p.unit_type,
+        piecesPerBox: Number(p.pieces_per_box) || 1,
         boxQty,
         sftQty,
         pieceQty,
