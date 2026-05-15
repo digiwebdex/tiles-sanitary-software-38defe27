@@ -21,6 +21,7 @@ import {
   Plus, Search, AlertTriangle, Printer, Download, Upload, Lock,
 } from "lucide-react";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
+import { TileStockBadge } from "@/components/TileStockBadge";
 import BarcodePrintDialog from "./BarcodePrintDialog";
 import ProductDetailDialog from "./ProductDetailDialog";
 import BrokenStockDialog from "./BrokenStockDialog";
