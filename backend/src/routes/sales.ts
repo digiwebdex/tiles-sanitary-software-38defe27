@@ -306,6 +306,9 @@ router.get('/:id', async (req: Request, res: Response) => {
 const saleItemSchema = z.object({
   product_id: z.string().uuid(),
   quantity: z.coerce.number().positive(),
+  /** Optional dual-unit fields. If omitted, derived from `quantity` + product ppb. */
+  box_qty: z.coerce.number().min(0).optional(),
+  piece_qty: z.coerce.number().min(0).optional(),
   sale_rate: z.coerce.number().min(0),
   rate_source: z.enum(['default', 'tier', 'manual']).optional(),
   tier_id: z.string().uuid().nullable().optional(),
