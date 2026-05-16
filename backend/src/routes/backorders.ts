@@ -69,6 +69,7 @@ async function querySaleItems(
       'p.name as product_name',
       'p.sku as product_sku',
       'p.unit_type as product_unit_type',
+      'p.pieces_per_box as product_pieces_per_box',
       'p.brand as product_brand',
       's.invoice_number',
       's.sale_date',
