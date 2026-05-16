@@ -127,7 +127,8 @@ const QuotationDocument = ({ quotation, items, customer, dealerInfo, showMeasure
           </thead>
           <tbody>
             {items.map((it, idx) => {
-              const qtyDisplay = it.unit_type === "box_sft" ? `${it.quantity} box` : `${it.quantity} pc`;
+              const ppb = Math.max(1, Number((it as any).pieces_per_box ?? 1));
+              const qtyDisplay = formatStockUnit(Number(it.quantity) || 0, ppb, it.unit_type === "box_sft");
               const sftDisplay =
                 it.unit_type === "box_sft" && it.per_box_sft
                   ? ` (${(Number(it.quantity) * Number(it.per_box_sft)).toFixed(2)} Sft)`
