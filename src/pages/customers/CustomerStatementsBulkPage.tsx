@@ -60,7 +60,7 @@ const CustomerStatementsBulkPage = () => {
     targets.forEach((c, idx) => {
       const msg = [
         `Hello ${c.name},`,
-        `Friendly reminder — your account at ${profile?.full_name || "us"} has an outstanding balance.`,
+        `Friendly reminder — your account has an outstanding balance.`,
         ``,
         `*Total due: ৳${c.due_balance.toFixed(2)}*`,
         ``,
