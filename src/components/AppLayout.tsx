@@ -35,6 +35,7 @@ const navItems = [
   { path: "/collections", label: "Payments", icon: Wallet },
   { path: "/bank-accounts", label: "Bank Accounts", icon: Landmark, dealerAdminOnly: true },
   { path: "/cashbook", label: "Cashbook", icon: BookOpen, dealerAdminOnly: true },
+  { path: "/cash-closing", label: "Day-End Closing", icon: ClipboardCheck, dealerAdminOnly: true },
   { path: "/financials", label: "Financial Statements", icon: Scale, dealerAdminOnly: true },
   { path: "/hrm", label: "HRM (Employees)", icon: Users, dealerAdminOnly: true },
   { path: "/directors", label: "Directors", icon: Crown, dealerAdminOnly: true },
