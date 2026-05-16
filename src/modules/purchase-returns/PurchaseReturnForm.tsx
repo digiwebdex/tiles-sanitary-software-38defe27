@@ -60,9 +60,17 @@ const PurchaseReturnForm = ({ dealerId, onSubmit, isLoading }: PurchaseReturnFor
         `/api/products?dealerId=${dealerId}&pageSize=500&orderBy=name&orderDir=asc&f.active=true`,
       );
       const body = await res.json().catch(() => ({} as any));
-      return ((body as any)?.rows ?? []) as { id: string; name: string; sku: string }[];
+      return ((body as any)?.rows ?? []) as {
+        id: string;
+        name: string;
+        sku: string;
+        unit_type?: string | null;
+        pieces_per_box?: number | null;
+      }[];
     },
   });
+
+  const productMap = new Map(products.map((p) => [p.id, p]));
 
   const watchItems = form.watch("items");
   const grandTotal = watchItems.reduce((s, item) => s + (item.quantity || 0) * (item.unit_price || 0), 0);
@@ -153,13 +161,51 @@ const PurchaseReturnForm = ({ dealerId, onSubmit, isLoading }: PurchaseReturnFor
                 <FormField
                   control={form.control}
                   name={`items.${index}.quantity`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Qty</FormLabel>
-                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const prod = productMap.get(watchItems[index]?.product_id || "");
+                    const isTile = prod?.unit_type === "box_sft";
+                    const ppb = Math.max(1, Number(prod?.pieces_per_box ?? 1));
+                    const qty = Number(field.value) || 0;
+                    const boxPart = Math.floor(qty);
+                    const piecePart = Math.round((qty - boxPart) * ppb);
+                    const setBoxPiece = (b: number, p: number) => {
+                      field.onChange((Number(b) || 0) + (Number(p) || 0) / ppb);
+                    };
+                    return (
+                      <FormItem>
+                        <FormLabel>Qty</FormLabel>
+                        {isTile ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min={0}
+                                step="1"
+                                className="h-9 w-14 text-sm"
+                                value={boxPart}
+                                onChange={(e) => setBoxPiece(parseInt(e.target.value) || 0, piecePart)}
+                              />
+                              <span className="text-xs text-muted-foreground">box</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={ppb - 1}
+                                step="1"
+                                className="h-9 w-14 text-sm"
+                                value={piecePart}
+                                onChange={(e) => setBoxPiece(boxPart, parseInt(e.target.value) || 0)}
+                              />
+                              <span className="text-xs text-muted-foreground">pc</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">= {qty.toFixed(3)} box</p>
+                          </div>
+                        ) : (
+                          <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
