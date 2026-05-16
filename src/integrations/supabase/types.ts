@@ -2115,6 +2115,119 @@ export type Database = {
           },
         ]
       }
+      purchase_draft_items: {
+        Row: {
+          created_at: string
+          dealer_id: string
+          draft_id: string
+          id: string
+          product_id: string
+          suggested_qty: number
+          suggested_rate: number
+        }
+        Insert: {
+          created_at?: string
+          dealer_id: string
+          draft_id: string
+          id?: string
+          product_id: string
+          suggested_qty?: number
+          suggested_rate?: number
+        }
+        Update: {
+          created_at?: string
+          dealer_id?: string
+          draft_id?: string
+          id?: string
+          product_id?: string
+          suggested_qty?: number
+          suggested_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_draft_items_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "dealers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_draft_items_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_draft_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_drafts: {
+        Row: {
+          converted_purchase_id: string | null
+          created_at: string
+          created_by: string | null
+          dealer_id: string
+          id: string
+          notes: string | null
+          source: string
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          converted_purchase_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dealer_id: string
+          id?: string
+          notes?: string | null
+          source?: string
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          converted_purchase_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dealer_id?: string
+          id?: string
+          notes?: string | null
+          source?: string
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_drafts_converted_purchase_id_fkey"
+            columns: ["converted_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_drafts_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "dealers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_drafts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_items: {
         Row: {
           batch_id: string | null
