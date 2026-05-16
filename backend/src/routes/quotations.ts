@@ -218,10 +218,11 @@ router.get('/:id/items', async (req: Request, res: Response) => {
   try {
     const dealerId = resolveDealer(req, res);
     if (!dealerId) return;
-    const rows = await db('quotation_items')
-      .where({ quotation_id: req.params.id, dealer_id: dealerId })
-      .orderBy('sort_order', 'asc')
-      .select('*');
+    const rows = await db('quotation_items as qi')
+      .leftJoin('products as p', 'p.id', 'qi.product_id')
+      .where({ 'qi.quotation_id': req.params.id, 'qi.dealer_id': dealerId })
+      .orderBy('qi.sort_order', 'asc')
+      .select('qi.*', 'p.pieces_per_box as pieces_per_box');
     res.json({ data: rows });
   } catch (e: any) {
     console.error('[quotations items]', e.message);

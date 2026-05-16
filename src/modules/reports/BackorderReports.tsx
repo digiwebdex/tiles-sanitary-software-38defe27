@@ -7,6 +7,14 @@ import {
 import { backorderAllocationService, FULFILLMENT_STATUS_LABELS, FULFILLMENT_STATUS_COLORS } from "@/services/backorderAllocationService";
 import { deliveryService } from "@/services/deliveryService";
 import { FulfillmentBadge } from "@/components/FulfillmentBadge";
+import { formatStockUnit } from "@/lib/units";
+
+/** Format qty with dual-unit (Box + Pieces) display for tile products. */
+const fmtQty = (item: any, value: number | string | null | undefined): string => {
+  const ppb = Math.max(1, Number(item?.products?.pieces_per_box ?? 1));
+  const isTile = item?.products?.unit_type === "box_sft";
+  return formatStockUnit(Number(value) || 0, ppb, isTile);
+};
 
 interface ReportProps {
   dealerId: string;
@@ -60,10 +68,10 @@ export function BackorderReport({ dealerId }: ReportProps) {
                         <span className="font-medium">{item.products?.name}</span>
                         <span className="text-xs text-muted-foreground ml-1">({item.products?.sku})</span>
                       </TableCell>
-                      <TableCell className="text-center">{item.quantity}</TableCell>
-                      <TableCell className="text-center font-semibold text-amber-600">{item.backorder_qty}</TableCell>
-                      <TableCell className="text-center font-semibold text-blue-600">{item.allocated_qty}</TableCell>
-                      <TableCell className="text-center font-bold text-red-600">{unfulfilled}</TableCell>
+                      <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                      <TableCell className="text-center font-semibold text-amber-600">{fmtQty(item, item.backorder_qty)}</TableCell>
+                      <TableCell className="text-center font-semibold text-blue-600">{fmtQty(item, item.allocated_qty)}</TableCell>
+                      <TableCell className="text-center font-bold text-red-600">{fmtQty(item, unfulfilled)}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className={`text-xs ${FULFILLMENT_STATUS_COLORS[item.fulfillment_status] ?? ""}`}>
                           {FULFILLMENT_STATUS_LABELS[item.fulfillment_status] ?? item.fulfillment_status}
@@ -121,9 +129,9 @@ export function PendingFulfillmentReport({ dealerId }: ReportProps) {
                     <TableCell className="font-mono text-sm">{item.sales?.invoice_number ?? "—"}</TableCell>
                     <TableCell>{item.sales?.customers?.name ?? "—"}</TableCell>
                     <TableCell className="font-medium">{item.products?.name}</TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-center text-amber-600 font-semibold">{item.backorder_qty}</TableCell>
-                    <TableCell className="text-center text-blue-600 font-semibold">{item.allocated_qty}</TableCell>
+                    <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                    <TableCell className="text-center text-amber-600 font-semibold">{fmtQty(item, item.backorder_qty)}</TableCell>
+                    <TableCell className="text-center text-blue-600 font-semibold">{fmtQty(item, item.allocated_qty)}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className={`text-xs ${FULFILLMENT_STATUS_COLORS[item.fulfillment_status] ?? ""}`}>
                         {FULFILLMENT_STATUS_LABELS[item.fulfillment_status] ?? item.fulfillment_status}
@@ -175,20 +183,24 @@ export function ShortageDemandReport({ dealerId }: ReportProps) {
                       No product shortages
                     </TableCell>
                   </TableRow>
-                ) : (data ?? []).map((item: any) => (
-                  <TableRow key={item.product_id}>
-                    <TableCell>
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-xs text-muted-foreground ml-1">({item.sku})</span>
-                    </TableCell>
-                    <TableCell>{item.brand}</TableCell>
-                    <TableCell>{item.unit_type === "box_sft" ? "Box" : "Piece"}</TableCell>
-                    <TableCell className="text-center font-semibold text-amber-600">{item.totalShortage}</TableCell>
-                    <TableCell className="text-center font-semibold text-blue-600">{item.totalAllocated}</TableCell>
-                    <TableCell className="text-center font-bold text-red-600">{item.unfulfilledQty}</TableCell>
-                    <TableCell className="text-center">{item.pendingCount}</TableCell>
-                  </TableRow>
-                ))}
+                ) : (data ?? []).map((item: any) => {
+                  const isTile = item.unit_type === "box_sft";
+                  const ppb = Math.max(1, Number(item.pieces_per_box ?? 1));
+                  return (
+                    <TableRow key={item.product_id}>
+                      <TableCell>
+                        <span className="font-medium">{item.name}</span>
+                        <span className="text-xs text-muted-foreground ml-1">({item.sku})</span>
+                      </TableCell>
+                      <TableCell>{item.brand}</TableCell>
+                      <TableCell>{isTile ? "Box" : "Piece"}</TableCell>
+                      <TableCell className="text-center font-semibold text-amber-600">{formatStockUnit(item.totalShortage, ppb, isTile)}</TableCell>
+                      <TableCell className="text-center font-semibold text-blue-600">{formatStockUnit(item.totalAllocated, ppb, isTile)}</TableCell>
+                      <TableCell className="text-center font-bold text-red-600">{formatStockUnit(item.unfulfilledQty, ppb, isTile)}</TableCell>
+                      <TableCell className="text-center">{item.pendingCount}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -262,8 +274,8 @@ export function CustomerPendingDeliveryReport({ dealerId }: ReportProps) {
                       <TableRow key={item.id}>
                         <TableCell className="font-mono text-sm">{item.sales?.invoice_number ?? "—"}</TableCell>
                         <TableCell>{item.products?.name ?? "—"}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-center font-semibold text-amber-600">{item.backorder_qty}</TableCell>
+                        <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                        <TableCell className="text-center font-semibold text-amber-600">{fmtQty(item, item.backorder_qty)}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className={`text-xs ${FULFILLMENT_STATUS_COLORS[item.fulfillment_status] ?? ""}`}>
                             {FULFILLMENT_STATUS_LABELS[item.fulfillment_status] ?? item.fulfillment_status}
@@ -326,8 +338,8 @@ export function ReadyForDeliveryReport({ dealerId }: ReportProps) {
                       <span className="font-medium">{item.products?.name}</span>
                       <span className="text-xs text-muted-foreground ml-1">({item.products?.sku})</span>
                     </TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-center font-semibold text-blue-600">{item.allocated_qty}</TableCell>
+                    <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                    <TableCell className="text-center font-semibold text-blue-600">{fmtQty(item, item.allocated_qty)}</TableCell>
                     <TableCell className="text-center">
                       <FulfillmentBadge status={item.fulfillment_status} />
                     </TableCell>
@@ -406,9 +418,9 @@ export function PartiallyDeliveredReport({ dealerId }: ReportProps) {
                         <span className="font-medium">{item.products?.name}</span>
                         <span className="text-xs text-muted-foreground ml-1">({item.products?.sku})</span>
                       </TableCell>
-                      <TableCell className="text-center">{ordered}</TableCell>
-                      <TableCell className="text-center font-semibold text-green-600">{delivered}</TableCell>
-                      <TableCell className="text-center font-semibold text-orange-600">{pending}</TableCell>
+                      <TableCell className="text-center">{fmtQty(item, ordered)}</TableCell>
+                      <TableCell className="text-center font-semibold text-green-600">{fmtQty(item, delivered)}</TableCell>
+                      <TableCell className="text-center font-semibold text-orange-600">{fmtQty(item, pending)}</TableCell>
                       <TableCell className="text-center">
                         <FulfillmentBadge status={item.fulfillment_status} />
                       </TableCell>
