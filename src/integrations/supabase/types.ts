@@ -370,6 +370,83 @@ export type Database = {
           },
         ]
       }
+      cash_closings: {
+        Row: {
+          approval_note: string | null
+          approved_at: string | null
+          approved_by: string | null
+          closing_date: string
+          counted_cash: number
+          created_at: string
+          dealer_id: string
+          denominations: Json
+          expected_closing: number
+          id: string
+          notes: string | null
+          opening_cash: number
+          status: string
+          submitted_at: string
+          submitted_by: string | null
+          system_cash_in: number
+          system_cash_out: number
+          updated_at: string
+          variance: number
+          variance_reason: string | null
+        }
+        Insert: {
+          approval_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          closing_date: string
+          counted_cash?: number
+          created_at?: string
+          dealer_id: string
+          denominations?: Json
+          expected_closing?: number
+          id?: string
+          notes?: string | null
+          opening_cash?: number
+          status?: string
+          submitted_at?: string
+          submitted_by?: string | null
+          system_cash_in?: number
+          system_cash_out?: number
+          updated_at?: string
+          variance?: number
+          variance_reason?: string | null
+        }
+        Update: {
+          approval_note?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          closing_date?: string
+          counted_cash?: number
+          created_at?: string
+          dealer_id?: string
+          denominations?: Json
+          expected_closing?: number
+          id?: string
+          notes?: string | null
+          opening_cash?: number
+          status?: string
+          submitted_at?: string
+          submitted_by?: string | null
+          system_cash_in?: number
+          system_cash_out?: number
+          updated_at?: string
+          variance?: number
+          variance_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_closings_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "dealers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_ledger: {
         Row: {
           amount: number
