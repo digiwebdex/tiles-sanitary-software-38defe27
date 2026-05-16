@@ -149,14 +149,14 @@ router.get('/drafts', async (req, res) => {
     let counts: Record<string, number> = {};
     let totals: Record<string, number> = {};
     if (ids.length) {
-      const rows = await db('purchase_draft_items')
+      const rows = (await db('purchase_draft_items')
         .whereIn('draft_id', ids)
         .where('dealer_id', dealerId)
         .select('draft_id')
-        .count<{ draft_id: string; count: string }[]>('* as count')
-        .sum<{ sum: string }>(db.raw('suggested_qty * suggested_rate as sum'))
-        .groupBy('draft_id');
-      for (const r of rows as any[]) {
+        .count('* as count')
+        .sum({ sum: db.raw('suggested_qty * suggested_rate') })
+        .groupBy('draft_id')) as unknown as Array<{ draft_id: string; count: string; sum: string }>;
+      for (const r of rows) {
         counts[r.draft_id] = Number(r.count) || 0;
         totals[r.draft_id] = Number(r.sum) || 0;
       }
