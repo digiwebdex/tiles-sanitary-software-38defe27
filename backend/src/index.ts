@@ -60,6 +60,7 @@ import dataExportRoutes from './routes/dataExport';
 import teamRoutes from './routes/team';
 import bankAccountsRoutes from './routes/bankAccounts';
 import cashbookRoutes from './routes/cashbook';
+import cashClosingsRoutes from './routes/cashClosings';
 import financialsRoutes from './routes/financials';
 import employeesRoutes from './routes/employees';
 import directorsRoutes from './routes/directors';
