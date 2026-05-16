@@ -163,7 +163,7 @@ router.post('/', async (req, res) => {
     variance_reason: variance_reason ?? null,
     notes: notes ?? null,
     status: 'submitted',
-    submitted_by: req.user?.id ?? null,
+    submitted_by: req.user?.userId ?? null,
     submitted_at: db.fn.now() as any,
     approved_by: null,
     approved_at: null,
@@ -180,7 +180,7 @@ router.post('/', async (req, res) => {
   // Audit
   await db('audit_logs').insert({
     dealer_id: dealerId,
-    user_id: req.user?.id ?? null,
+    user_id: req.user?.userId ?? null,
     action: existing ? 'CASH_CLOSING_RESUBMITTED' : 'CASH_CLOSING_SUBMITTED',
     table_name: 'cash_closings',
     record_id: saved.id,
@@ -203,14 +203,14 @@ router.post('/:id/approve', async (req, res) => {
   const [updated] = await db('cash_closings').where({ id: req.params.id })
     .update({
       status: 'approved',
-      approved_by: req.user?.id ?? null,
+      approved_by: req.user?.userId ?? null,
       approved_at: db.fn.now() as any,
       approval_note: note,
     }).returning('*');
 
   await db('audit_logs').insert({
     dealer_id: dealerId,
-    user_id: req.user?.id ?? null,
+    user_id: req.user?.userId ?? null,
     action: 'CASH_CLOSING_APPROVED',
     table_name: 'cash_closings',
     record_id: updated.id,
@@ -235,7 +235,7 @@ router.post('/:id/reject', async (req, res) => {
 
   await db('audit_logs').insert({
     dealer_id: dealerId,
-    user_id: req.user?.id ?? null,
+    user_id: req.user?.userId ?? null,
     action: 'CASH_CLOSING_REJECTED',
     table_name: 'cash_closings',
     record_id: updated.id,
