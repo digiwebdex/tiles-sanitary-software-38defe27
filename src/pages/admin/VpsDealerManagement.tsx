@@ -30,6 +30,7 @@ import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import { env } from "@/lib/env";
 import { saImpersonation } from "@/lib/saImpersonation";
 import EditDealerDialog from "./EditDealerDialog";
+import CreateDealerDialog from "./CreateDealerDialog";
 
 interface VpsDealer {
   id: string;
@@ -172,10 +173,13 @@ const VpsDealerManagement = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>All Dealers</CardTitle>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <CreateDealerDialog />
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {error && (
