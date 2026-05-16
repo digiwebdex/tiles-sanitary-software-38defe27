@@ -232,7 +232,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Category breakdown
     const catRows = await db.raw(
       `
-      SELECT COALESCE(p.category, 'Other') AS category,
+      SELECT COALESCE(p.category::text, 'Other') AS category,
              COALESCE(SUM(si.total), 0) AS amount
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
