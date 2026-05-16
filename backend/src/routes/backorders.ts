@@ -93,6 +93,7 @@ async function querySaleItems(
           name: r.product_name,
           sku: r.product_sku,
           unit_type: r.product_unit_type,
+          pieces_per_box: r.product_pieces_per_box,
           brand: r.product_brand,
         }
       : null,
