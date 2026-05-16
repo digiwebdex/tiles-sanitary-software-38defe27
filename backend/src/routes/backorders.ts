@@ -160,6 +160,7 @@ router.get('/shortage-demand', async (req: Request, res: Response) => {
         'p.name as product_name',
         'p.sku as product_sku',
         'p.unit_type as product_unit_type',
+        'p.pieces_per_box as product_pieces_per_box',
         'p.brand as product_brand',
       );
 
@@ -169,6 +170,7 @@ router.get('/shortage-demand', async (req: Request, res: Response) => {
         name: string;
         sku: string;
         unit_type: string;
+        pieces_per_box: number;
         brand: string;
         totalShortage: number;
         totalAllocated: number;
@@ -187,6 +189,7 @@ router.get('/shortage-demand', async (req: Request, res: Response) => {
           name: item.product_name ?? 'Unknown',
           sku: item.product_sku ?? '',
           unit_type: item.product_unit_type ?? 'piece',
+          pieces_per_box: Number(item.product_pieces_per_box ?? 1),
           brand: item.product_brand ?? '—',
           totalShortage: Number(item.backorder_qty),
           totalAllocated: Number(item.allocated_qty),
