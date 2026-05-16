@@ -12,7 +12,7 @@ const extension = isCompiled ? 'js' : 'ts';
 const migrationsDir = path.resolve(__dirname, 'migrations');
 const seedsDir = path.resolve(__dirname, 'seeds');
 
-class CompiledMigrationSource {
+class CompiledMigrationSource implements Knex.MigrationSource<string> {
   constructor(private readonly directory: string) {}
 
   async getMigrations(): Promise<string[]> {
@@ -27,10 +27,10 @@ class CompiledMigrationSource {
     return migration;
   }
 
-  getMigration(migration: string): unknown {
+  async getMigration(migration: string): Promise<Knex.Migration> {
     const compiledFile = migration.replace(/\.ts$/, '.js');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(path.join(this.directory, compiledFile));
+    return require(path.join(this.directory, compiledFile)) as Knex.Migration;
   }
 }
 
