@@ -183,20 +183,24 @@ export function ShortageDemandReport({ dealerId }: ReportProps) {
                       No product shortages
                     </TableCell>
                   </TableRow>
-                ) : (data ?? []).map((item: any) => (
-                  <TableRow key={item.product_id}>
-                    <TableCell>
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-xs text-muted-foreground ml-1">({item.sku})</span>
-                    </TableCell>
-                    <TableCell>{item.brand}</TableCell>
-                    <TableCell>{item.unit_type === "box_sft" ? "Box" : "Piece"}</TableCell>
-                    <TableCell className="text-center font-semibold text-amber-600">{item.totalShortage}</TableCell>
-                    <TableCell className="text-center font-semibold text-blue-600">{item.totalAllocated}</TableCell>
-                    <TableCell className="text-center font-bold text-red-600">{item.unfulfilledQty}</TableCell>
-                    <TableCell className="text-center">{item.pendingCount}</TableCell>
-                  </TableRow>
-                ))}
+                ) : (data ?? []).map((item: any) => {
+                  const isTile = item.unit_type === "box_sft";
+                  const ppb = Math.max(1, Number(item.pieces_per_box ?? 1));
+                  return (
+                    <TableRow key={item.product_id}>
+                      <TableCell>
+                        <span className="font-medium">{item.name}</span>
+                        <span className="text-xs text-muted-foreground ml-1">({item.sku})</span>
+                      </TableCell>
+                      <TableCell>{item.brand}</TableCell>
+                      <TableCell>{isTile ? "Box" : "Piece"}</TableCell>
+                      <TableCell className="text-center font-semibold text-amber-600">{formatStockUnit(item.totalShortage, ppb, isTile)}</TableCell>
+                      <TableCell className="text-center font-semibold text-blue-600">{formatStockUnit(item.totalAllocated, ppb, isTile)}</TableCell>
+                      <TableCell className="text-center font-bold text-red-600">{formatStockUnit(item.unfulfilledQty, ppb, isTile)}</TableCell>
+                      <TableCell className="text-center">{item.pendingCount}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
