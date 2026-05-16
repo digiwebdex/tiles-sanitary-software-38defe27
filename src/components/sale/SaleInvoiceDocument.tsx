@@ -1,4 +1,5 @@
 import { formatCurrency, CURRENCY_CODE } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { Separator } from "@/components/ui/separator";
 import { TrendingUp } from "lucide-react";
 import SaleInvoiceBarcode from "./SaleInvoiceBarcode";
