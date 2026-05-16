@@ -60,9 +60,17 @@ const PurchaseReturnForm = ({ dealerId, onSubmit, isLoading }: PurchaseReturnFor
         `/api/products?dealerId=${dealerId}&pageSize=500&orderBy=name&orderDir=asc&f.active=true`,
       );
       const body = await res.json().catch(() => ({} as any));
-      return ((body as any)?.rows ?? []) as { id: string; name: string; sku: string }[];
+      return ((body as any)?.rows ?? []) as {
+        id: string;
+        name: string;
+        sku: string;
+        unit_type?: string | null;
+        pieces_per_box?: number | null;
+      }[];
     },
   });
+
+  const productMap = new Map(products.map((p) => [p.id, p]));
 
   const watchItems = form.watch("items");
   const grandTotal = watchItems.reduce((s, item) => s + (item.quantity || 0) * (item.unit_price || 0), 0);
