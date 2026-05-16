@@ -129,7 +129,7 @@ router.get('/:customerId', async (req, res) => {
         id: customer.id, name: customer.name, phone: customer.phone, email: customer.email,
         address: customer.address, credit_limit: Number(customer.credit_limit) || 0,
       },
-      dealer: dealer ? { name: dealer.business_name || dealer.name, phone: dealer.phone, address: dealer.address, email: dealer.email } : null,
+      dealer: dealer ? { name: dealer.name, phone: dealer.phone, address: dealer.address } : null,
       from, to,
       opening_balance: opening,
       entries,
