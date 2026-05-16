@@ -1,5 +1,6 @@
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency, CURRENCY_CODE, parseLocalDate } from "@/lib/utils";
+import { formatStockUnit } from "@/lib/units";
 import { formatQuotationDisplayNo, type Quotation, type QuotationItem } from "@/services/quotationService";
 import RateSourceBadge from "@/components/RateSourceBadge";
 
