@@ -69,6 +69,9 @@ import WarehousesPage from "./pages/warehouses/WarehousesPage";
 import Phase3ReportsPage from "./pages/reports/Phase3ReportsPage";
 import SalaryVoucherPage from "./pages/vouchers/SalaryVoucherPage";
 import DirectorVoucherPage from "./pages/vouchers/DirectorVoucherPage";
+import AutoPoDraftPage from "./pages/purchases/AutoPoDraftPage";
+import CustomerStatementPage from "./pages/customers/CustomerStatementPage";
+import CustomerStatementsBulkPage from "./pages/customers/CustomerStatementsBulkPage";
 
 // Super Admin
 import SuperAdminLayout from "./pages/super-admin/SuperAdminLayout";
@@ -189,6 +192,9 @@ const App = () => (
             <Route path="/bank-accounts/:id" element={<ProtectedRoute><AppLayout><BankAccountDetailPage /></AppLayout></ProtectedRoute>} />
             <Route path="/cashbook" element={<ProtectedRoute><AppLayout><CashbookPage /></AppLayout></ProtectedRoute>} />
             <Route path="/cash-closing" element={<ProtectedRoute><AppLayout><CashClosingPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/purchases/auto-draft" element={<ProtectedRoute><AppLayout><AutoPoDraftPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/customers/statements" element={<ProtectedRoute><AppLayout><CustomerStatementsBulkPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/customers/:customerId/statement" element={<ProtectedRoute><AppLayout><CustomerStatementPage /></AppLayout></ProtectedRoute>} />
             <Route path="/financials" element={<ProtectedRoute><AppLayout><FinancialStatementsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm" element={<ProtectedRoute><AppLayout><HRMPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />

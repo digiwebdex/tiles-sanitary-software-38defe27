@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Receipt, RotateCcw,
   BookOpen, BarChart3, LogOut, Settings, Clock, Truck, Users, ShieldCheck, FileText,
   Undo2, MapPin, Zap, Gift, Wallet, FileSignature, Folder, HandCoins, MonitorSpeaker,
-  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale, Warehouse, ClipboardCheck,
+  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale, Warehouse, ClipboardCheck, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDealerId } from "@/hooks/useDealerId";
@@ -22,7 +22,9 @@ const navItems = [
   { path: "/products", label: "Products", icon: Package },
   { path: "/suppliers", label: "Suppliers", icon: Truck },
   { path: "/purchases", label: "Purchases", icon: ShoppingCart },
+  { path: "/purchases/auto-draft", label: "Auto-PO Drafts", icon: Sparkles, dealerAdminOnly: true },
   { path: "/customers", label: "Customers", icon: Users },
+  { path: "/customers/statements", label: "Customer Statements", icon: FileText, dealerAdminOnly: true },
   { path: "/projects", label: "Projects", icon: Folder },
   { path: "/quotations", label: "Quotations", icon: FileSignature },
   { path: "/sales", label: "Sales", icon: Receipt },
