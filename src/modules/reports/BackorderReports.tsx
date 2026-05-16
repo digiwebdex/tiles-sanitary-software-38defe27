@@ -68,10 +68,10 @@ export function BackorderReport({ dealerId }: ReportProps) {
                         <span className="font-medium">{item.products?.name}</span>
                         <span className="text-xs text-muted-foreground ml-1">({item.products?.sku})</span>
                       </TableCell>
-                      <TableCell className="text-center">{item.quantity}</TableCell>
-                      <TableCell className="text-center font-semibold text-amber-600">{item.backorder_qty}</TableCell>
-                      <TableCell className="text-center font-semibold text-blue-600">{item.allocated_qty}</TableCell>
-                      <TableCell className="text-center font-bold text-red-600">{unfulfilled}</TableCell>
+                      <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                      <TableCell className="text-center font-semibold text-amber-600">{fmtQty(item, item.backorder_qty)}</TableCell>
+                      <TableCell className="text-center font-semibold text-blue-600">{fmtQty(item, item.allocated_qty)}</TableCell>
+                      <TableCell className="text-center font-bold text-red-600">{fmtQty(item, unfulfilled)}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className={`text-xs ${FULFILLMENT_STATUS_COLORS[item.fulfillment_status] ?? ""}`}>
                           {FULFILLMENT_STATUS_LABELS[item.fulfillment_status] ?? item.fulfillment_status}
@@ -129,9 +129,9 @@ export function PendingFulfillmentReport({ dealerId }: ReportProps) {
                     <TableCell className="font-mono text-sm">{item.sales?.invoice_number ?? "—"}</TableCell>
                     <TableCell>{item.sales?.customers?.name ?? "—"}</TableCell>
                     <TableCell className="font-medium">{item.products?.name}</TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-center text-amber-600 font-semibold">{item.backorder_qty}</TableCell>
-                    <TableCell className="text-center text-blue-600 font-semibold">{item.allocated_qty}</TableCell>
+                    <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                    <TableCell className="text-center text-amber-600 font-semibold">{fmtQty(item, item.backorder_qty)}</TableCell>
+                    <TableCell className="text-center text-blue-600 font-semibold">{fmtQty(item, item.allocated_qty)}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className={`text-xs ${FULFILLMENT_STATUS_COLORS[item.fulfillment_status] ?? ""}`}>
                         {FULFILLMENT_STATUS_LABELS[item.fulfillment_status] ?? item.fulfillment_status}
@@ -270,8 +270,8 @@ export function CustomerPendingDeliveryReport({ dealerId }: ReportProps) {
                       <TableRow key={item.id}>
                         <TableCell className="font-mono text-sm">{item.sales?.invoice_number ?? "—"}</TableCell>
                         <TableCell>{item.products?.name ?? "—"}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-center font-semibold text-amber-600">{item.backorder_qty}</TableCell>
+                        <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                        <TableCell className="text-center font-semibold text-amber-600">{fmtQty(item, item.backorder_qty)}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant="outline" className={`text-xs ${FULFILLMENT_STATUS_COLORS[item.fulfillment_status] ?? ""}`}>
                             {FULFILLMENT_STATUS_LABELS[item.fulfillment_status] ?? item.fulfillment_status}
@@ -334,8 +334,8 @@ export function ReadyForDeliveryReport({ dealerId }: ReportProps) {
                       <span className="font-medium">{item.products?.name}</span>
                       <span className="text-xs text-muted-foreground ml-1">({item.products?.sku})</span>
                     </TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-center font-semibold text-blue-600">{item.allocated_qty}</TableCell>
+                    <TableCell className="text-center">{fmtQty(item, item.quantity)}</TableCell>
+                    <TableCell className="text-center font-semibold text-blue-600">{fmtQty(item, item.allocated_qty)}</TableCell>
                     <TableCell className="text-center">
                       <FulfillmentBadge status={item.fulfillment_status} />
                     </TableCell>
@@ -414,9 +414,9 @@ export function PartiallyDeliveredReport({ dealerId }: ReportProps) {
                         <span className="font-medium">{item.products?.name}</span>
                         <span className="text-xs text-muted-foreground ml-1">({item.products?.sku})</span>
                       </TableCell>
-                      <TableCell className="text-center">{ordered}</TableCell>
-                      <TableCell className="text-center font-semibold text-green-600">{delivered}</TableCell>
-                      <TableCell className="text-center font-semibold text-orange-600">{pending}</TableCell>
+                      <TableCell className="text-center">{fmtQty(item, ordered)}</TableCell>
+                      <TableCell className="text-center font-semibold text-green-600">{fmtQty(item, delivered)}</TableCell>
+                      <TableCell className="text-center font-semibold text-orange-600">{fmtQty(item, pending)}</TableCell>
                       <TableCell className="text-center">
                         <FulfillmentBadge status={item.fulfillment_status} />
                       </TableCell>
