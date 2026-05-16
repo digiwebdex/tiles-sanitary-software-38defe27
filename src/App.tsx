@@ -61,6 +61,7 @@ import UserGuidePage from "./pages/UserGuidePage";
 import BankAccountsPage from "./pages/bank-accounts/BankAccountsPage";
 import BankAccountDetailPage from "./pages/bank-accounts/BankAccountDetailPage";
 import CashbookPage from "./pages/cashbook/CashbookPage";
+import CashClosingPage from "./pages/cash-closing/CashClosingPage";
 import FinancialStatementsPage from "./pages/financials/FinancialStatementsPage";
 import HRMPage from "./pages/hrm/HRMPage";
 import DirectorsPage from "./pages/directors/DirectorsPage";
