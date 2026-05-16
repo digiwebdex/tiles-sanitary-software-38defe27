@@ -7,6 +7,14 @@ import {
 import { backorderAllocationService, FULFILLMENT_STATUS_LABELS, FULFILLMENT_STATUS_COLORS } from "@/services/backorderAllocationService";
 import { deliveryService } from "@/services/deliveryService";
 import { FulfillmentBadge } from "@/components/FulfillmentBadge";
+import { formatStockUnit } from "@/lib/units";
+
+/** Format qty with dual-unit (Box + Pieces) display for tile products. */
+const fmtQty = (item: any, value: number | string | null | undefined): string => {
+  const ppb = Math.max(1, Number(item?.products?.pieces_per_box ?? 1));
+  const isTile = item?.products?.unit_type === "box_sft";
+  return formatStockUnit(Number(value) || 0, ppb, isTile);
+};
 
 interface ReportProps {
   dealerId: string;
