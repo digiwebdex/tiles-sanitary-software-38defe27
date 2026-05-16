@@ -148,9 +148,8 @@ const SaleInvoiceDocument = ({
           <tbody>
             {items.map((item: any, idx: number) => {
               const unitType = item.products?.unit_type;
-              const qtyDisplay = unitType === "box_sft"
-                ? `${item.quantity} box`
-                : `${item.quantity} pc`;
+              const ppb = Math.max(1, Number(item.products?.pieces_per_box ?? 1));
+              const qtyDisplay = formatStockUnit(Number(item.quantity) || 0, ppb, unitType === "box_sft");
               const sftDisplay = item.total_sft ? ` (${Number(item.total_sft).toFixed(2)} Sft)` : "";
 
               return (
