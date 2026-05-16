@@ -30,6 +30,7 @@ import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import { env } from "@/lib/env";
 import { saImpersonation } from "@/lib/saImpersonation";
 import EditDealerDialog from "./EditDealerDialog";
+import CreateDealerDialog from "./CreateDealerDialog";
 
 interface VpsDealer {
   id: string;
