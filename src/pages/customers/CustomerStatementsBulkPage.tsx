@@ -9,13 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDealerId } from "@/hooks/useDealerId";
+import { customerStatementService } from "@/services/customerStatementService";
+import { buildWaLink, normalizePhoneForWa, isValidWaPhone } from "@/services/whatsappService";
 import { formatCurrency } from "@/lib/utils";
 import { FileText, MessageCircle, Search, Send, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const CustomerStatementsBulkPage = () => {
   const dealerId = useDealerId();
-  const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
