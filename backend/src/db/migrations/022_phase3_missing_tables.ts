@@ -333,6 +333,84 @@ export async function up(knex: Knex): Promise<void> {
   `);
 
   // ────────────────────────────────────────────────────────────────────────────
+  // 9b) batch tracking dependencies used by purchase/sale/delivery/reservation flows
+  // ────────────────────────────────────────────────────────────────────────────
+  await knex.raw(`
+    CREATE TABLE IF NOT EXISTS public.product_batches (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      dealer_id uuid NOT NULL REFERENCES public.dealers(id) ON DELETE CASCADE,
+      product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+      batch_no text NOT NULL,
+      lot_no text,
+      shade_code text,
+      caliber text,
+      box_qty numeric(14,4) NOT NULL DEFAULT 0,
+      piece_qty numeric(14,4) NOT NULL DEFAULT 0,
+      sft_qty numeric(14,4) NOT NULL DEFAULT 0,
+      reserved_box_qty numeric(14,4) NOT NULL DEFAULT 0,
+      reserved_piece_qty numeric(14,4) NOT NULL DEFAULT 0,
+      total_pieces numeric(14,4) NOT NULL DEFAULT 0,
+      pieces_per_box_snapshot integer NOT NULL DEFAULT 1,
+      status text NOT NULL DEFAULT 'active',
+      notes text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_product_batches_dealer ON public.product_batches(dealer_id);
+    CREATE INDEX IF NOT EXISTS idx_product_batches_product ON public.product_batches(product_id);
+    CREATE INDEX IF NOT EXISTS idx_product_batches_fifo ON public.product_batches(dealer_id, product_id, status, created_at);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_product_batches_identity
+      ON public.product_batches (
+        dealer_id,
+        product_id,
+        batch_no,
+        COALESCE(shade_code, ''),
+        COALESCE(caliber, ''),
+        COALESCE(lot_no, '')
+      );
+
+    ALTER TABLE public.purchase_items
+      ADD COLUMN IF NOT EXISTS batch_id uuid REFERENCES public.product_batches(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS shortage_note text;
+    CREATE INDEX IF NOT EXISTS idx_purchase_items_batch ON public.purchase_items(batch_id);
+
+    CREATE TABLE IF NOT EXISTS public.stock_reservations (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      dealer_id uuid NOT NULL REFERENCES public.dealers(id) ON DELETE CASCADE,
+      product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+      batch_id uuid REFERENCES public.product_batches(id) ON DELETE SET NULL,
+      customer_id uuid NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+      reserved_qty numeric(14,4) NOT NULL DEFAULT 0,
+      fulfilled_qty numeric(14,4) NOT NULL DEFAULT 0,
+      released_qty numeric(14,4) NOT NULL DEFAULT 0,
+      source_type text NOT NULL DEFAULT 'manual',
+      source_id uuid,
+      reason text,
+      release_reason text,
+      status text NOT NULL DEFAULT 'active',
+      expires_at timestamptz,
+      created_by uuid,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_stock_reservations_dealer ON public.stock_reservations(dealer_id);
+    CREATE INDEX IF NOT EXISTS idx_stock_reservations_product ON public.stock_reservations(dealer_id, product_id, status);
+    CREATE INDEX IF NOT EXISTS idx_stock_reservations_customer ON public.stock_reservations(dealer_id, customer_id, status);
+    CREATE INDEX IF NOT EXISTS idx_stock_reservations_batch ON public.stock_reservations(batch_id);
+
+    CREATE TABLE IF NOT EXISTS public.delivery_item_batches (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      dealer_id uuid NOT NULL REFERENCES public.dealers(id) ON DELETE CASCADE,
+      delivery_item_id uuid NOT NULL REFERENCES public.delivery_items(id) ON DELETE CASCADE,
+      batch_id uuid NOT NULL REFERENCES public.product_batches(id) ON DELETE RESTRICT,
+      delivered_qty numeric(14,4) NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_dib_dealer ON public.delivery_item_batches(dealer_id);
+    CREATE INDEX IF NOT EXISTS idx_dib_delivery_item ON public.delivery_item_batches(delivery_item_id);
+    CREATE INDEX IF NOT EXISTS idx_dib_batch ON public.delivery_item_batches(batch_id);
+  `);
+
+  // ────────────────────────────────────────────────────────────────────────────
   // 10) purchase_shortage_links
   // ────────────────────────────────────────────────────────────────────────────
   await knex.raw(`
