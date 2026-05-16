@@ -188,6 +188,7 @@ const App = () => (
             <Route path="/bank-accounts" element={<ProtectedRoute><AppLayout><BankAccountsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/bank-accounts/:id" element={<ProtectedRoute><AppLayout><BankAccountDetailPage /></AppLayout></ProtectedRoute>} />
             <Route path="/cashbook" element={<ProtectedRoute><AppLayout><CashbookPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/cash-closing" element={<ProtectedRoute><AppLayout><CashClosingPage /></AppLayout></ProtectedRoute>} />
             <Route path="/financials" element={<ProtectedRoute><AppLayout><FinancialStatementsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm" element={<ProtectedRoute><AppLayout><HRMPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />
