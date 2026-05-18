@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/services/auditService";
 import { useCallback } from "react";
 
 /**
@@ -16,22 +16,20 @@ export function useSubscriptionGuard() {
     async (action: string): Promise<boolean> => {
       if (canWrite) return true;
 
-      // Log the blocked attempt
+      // Log the blocked attempt (fire-and-forget via VPS)
       try {
-        await supabase.from("audit_logs").insert([
-          {
-            dealer_id: profile?.dealer_id ?? null,
-            user_id: user?.id ?? null,
-            action: "SUBSCRIPTION_BYPASS_ATTEMPT",
-            table_name: "subscription_guard",
-            record_id: action,
-            new_data: {
-              access_level: accessLevel,
-              attempted_action: action,
-              timestamp: new Date().toISOString(),
-            } as any,
+        await logAudit({
+          dealer_id: profile?.dealer_id ?? "",
+          user_id: user?.id ?? null,
+          action: "SUBSCRIPTION_BYPASS_ATTEMPT",
+          table_name: "subscription_guard",
+          record_id: "",
+          new_data: {
+            access_level: accessLevel,
+            attempted_action: action,
+            timestamp: new Date().toISOString(),
           },
-        ]);
+        });
       } catch {
         // Swallow — never let logging break the guard
       }

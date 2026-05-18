@@ -1,7 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/services/auditService";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -31,21 +31,18 @@ const ProtectedRoute = ({ children, allowReadonly = false }: ProtectedRouteProps
       (accessLevel === "readonly" || accessLevel === "blocked") &&
       !allowReadonly
     ) {
-      supabase
-        .from("audit_logs")
-        .insert([{
-          dealer_id: profile?.dealer_id ?? null,
-          user_id: user!.id,
-          action: "EXPIRED_SUBSCRIPTION_ACCESS",
-          table_name: "route_guard",
-          record_id: location.pathname,
-          new_data: {
-            access_level: accessLevel,
-            path: location.pathname,
-            timestamp: new Date().toISOString(),
-          } as any,
-        }])
-        .then(() => {});
+      logAudit({
+        dealer_id: profile?.dealer_id ?? "",
+        user_id: user!.id,
+        action: "EXPIRED_SUBSCRIPTION_ACCESS",
+        table_name: "route_guard",
+        record_id: "",
+        new_data: {
+          access_level: accessLevel,
+          path: location.pathname,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
   }, [authReady, accessLevel, allowReadonly, location.pathname, isSuperAdmin]);
 

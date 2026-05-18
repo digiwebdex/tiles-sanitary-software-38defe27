@@ -41,12 +41,13 @@ function isHighValue(action: string): boolean {
 
 export async function logAudit(input: AuditLogInput) {
   try {
+    const recordId = input.record_id && input.record_id.length > 0 ? input.record_id : null;
     const res = await vpsAuthedFetch("/api/audit-logs", {
       method: "POST",
       body: JSON.stringify({
         action: input.action,
         table_name: input.table_name,
-        record_id: input.record_id,
+        record_id: recordId,
         old_data: input.old_data ?? null,
         new_data: input.new_data ?? null,
       }),
