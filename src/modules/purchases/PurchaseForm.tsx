@@ -416,7 +416,10 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                             const mode = isTile ? entryModes[rowKey] ?? "box" : "box";
                             const boxQty = Number(f.value) || 0;
                             const totalPcs = Math.round(boxQty * ppb);
-                            const totalSftPreview = boxQty * perBoxSft;
+                            const wholeBox = Math.floor(totalPcs / Math.max(ppb, 1));
+                            const extraPc = totalPcs - wholeBox * Math.max(ppb, 1);
+                            const perPieceSft = ppb > 0 ? perBoxSft / ppb : perBoxSft;
+                            const totalSftPreview = totalPcs * perPieceSft;
 
                             return (
                               <FormItem className="space-y-1 min-w-[180px]">
@@ -461,8 +464,11 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                                         const raw = e.target.value;
                                         setSftInputs((prev) => ({ ...prev, [rowKey]: raw }));
                                         const sft = Number(raw) || 0;
-                                        const boxes = ceilBoxesFromSft(sft, perBoxSft);
-                                        f.onChange(boxes);
+                                        // Round up to next PIECE (not full box) — allows partial box buys.
+                                        const pps = ppb > 0 ? perBoxSft / ppb : perBoxSft;
+                                        const pcs = pps > 0 ? Math.ceil(sft / pps) : 0;
+                                        const boxesDecimal = ppb > 0 ? pcs / ppb : pcs;
+                                        f.onChange(boxesDecimal);
                                       }}
                                     />
                                   ) : (
@@ -479,8 +485,8 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                                   <div className="text-[10px] text-muted-foreground leading-tight">
                                     {mode === "sft" ? (
                                       <>
-                                        = <strong className="text-foreground">{boxQty} Box</strong> = {totalPcs} Pc = {totalSftPreview.toFixed(2)} SFT
-                                        <div className="text-[9px]">Auto-rounded to next full box</div>
+                                        = <strong className="text-foreground">{wholeBox} Box {extraPc} Pc</strong> = {totalPcs} Pc total = {totalSftPreview.toFixed(2)} SFT
+                                        <div className="text-[9px]">Auto-rounded up to next piece</div>
                                       </>
                                     ) : (
                                       <>
