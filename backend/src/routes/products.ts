@@ -296,6 +296,44 @@ router.get('/stock-map', async (req: Request, res: Response) => {
   }
 });
 
+// ── GET /api/products/last-purchase-map ───────────────────────────────────
+// Returns a per-product map of the most recent purchase rate / landed cost /
+// supplier for the dealer. Used by PurchaseForm to pre-fill rate hints.
+// MUST be registered before `/:id` so Express does not capture
+// "last-purchase-map" as the :id param.
+router.get('/last-purchase-map', requireRole('dealer_admin'), async (req: Request, res: Response) => {
+  try {
+    const dealerId = resolveDealerScope(req, res);
+    if (!dealerId) return;
+    const rows = await db('purchase_items as pi')
+      .innerJoin('purchases as pu', 'pu.id', 'pi.purchase_id')
+      .leftJoin('suppliers as s', 's.id', 'pu.supplier_id')
+      .where({ 'pi.dealer_id': dealerId })
+      .orderBy('pu.purchase_date', 'desc')
+      .select(
+        'pi.product_id',
+        'pi.purchase_rate',
+        'pi.landed_cost',
+        'pu.purchase_date',
+        's.name as supplier_name',
+      );
+    const map: Record<string, any> = {};
+    for (const r of rows as any[]) {
+      if (map[r.product_id]) continue;
+      map[r.product_id] = {
+        purchase_rate: Number(r.purchase_rate) || 0,
+        landed_cost: Number(r.landed_cost) || 0,
+        purchase_date: r.purchase_date ?? '',
+        supplier_name: r.supplier_name ?? '',
+      };
+    }
+    res.json(map);
+  } catch (err: any) {
+    console.error('[products/last-purchase-map]', err.message);
+    res.status(500).json({ error: 'Failed to load last-purchase map' });
+  }
+});
+
 // ── GET /api/products/:id ──────────────────────────────────────────────────
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -687,41 +725,7 @@ router.get('/:id/last-purchase', async (req: Request, res: Response) => {
   }
 });
 
-// ── GET /api/products/last-purchase-map ───────────────────────────────────
-// Returns a per-product map of the most recent purchase rate / landed cost /
-// supplier for the dealer. Used by PurchaseForm to pre-fill rate hints.
-router.get('/last-purchase-map', requireRole('dealer_admin'), async (req: Request, res: Response) => {
-  try {
-    const dealerId = resolveDealerScope(req, res);
-    if (!dealerId) return;
-    const rows = await db('purchase_items as pi')
-      .innerJoin('purchases as pu', 'pu.id', 'pi.purchase_id')
-      .leftJoin('suppliers as s', 's.id', 'pu.supplier_id')
-      .where({ 'pi.dealer_id': dealerId })
-      .orderBy('pu.purchase_date', 'desc')
-      .select(
-        'pi.product_id',
-        'pi.purchase_rate',
-        'pi.landed_cost',
-        'pu.purchase_date',
-        's.name as supplier_name',
-      );
-    const map: Record<string, any> = {};
-    for (const r of rows as any[]) {
-      if (map[r.product_id]) continue;
-      map[r.product_id] = {
-        purchase_rate: Number(r.purchase_rate) || 0,
-        landed_cost: Number(r.landed_cost) || 0,
-        purchase_date: r.purchase_date ?? '',
-        supplier_name: r.supplier_name ?? '',
-      };
-    }
-    res.json(map);
-  } catch (err: any) {
-    console.error('[products/last-purchase-map]', err.message);
-    res.status(500).json({ error: 'Failed to load last-purchase map' });
-  }
-});
+// (last-purchase-map route lives above /:id; see line ~299)
 
 // ── POST /api/products/:id/cost-price ─────────────────────────────────────
 // dealer_admin only. Manually sets the average_cost_per_unit on the dealer's
