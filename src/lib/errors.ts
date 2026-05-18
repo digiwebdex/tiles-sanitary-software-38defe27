@@ -74,22 +74,21 @@ export async function handleError(
 
   // Always log full details internally
   if (IS_PRODUCTION) {
-    // Silently log to audit_logs (fire-and-forget)
+    // Silently log via VPS audit endpoint (fire-and-forget)
     try {
-      await supabase.from("audit_logs").insert([
-        {
-          dealer_id: context?.dealerId ?? null,
-          user_id: context?.userId ?? null,
-          action: context?.action ?? "ERROR",
-          table_name: "app_errors",
-          record_id: appError.code,
-          new_data: {
-            message: appError.message,
-            code: appError.code,
-            statusCode: appError.statusCode,
-          } as any,
+      const { logAudit } = await import("@/services/auditService");
+      await logAudit({
+        dealer_id: context?.dealerId ?? "",
+        user_id: context?.userId ?? null,
+        action: context?.action ?? "ERROR",
+        table_name: "app_errors",
+        record_id: "",
+        new_data: {
+          code: appError.code,
+          message: appError.message,
+          statusCode: appError.statusCode,
         },
-      ]);
+      });
     } catch {
       // Swallow — never let error logging crash the app
     }
