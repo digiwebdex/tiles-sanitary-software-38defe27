@@ -439,6 +439,11 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
                                       onValueChange={(v) => {
                                         if (!v) return;
                                         setEntryModes((prev) => ({ ...prev, [rowKey]: v as "box" | "sft" }));
+                                        if (v === "sft") {
+                                          const curPcs = Math.round((Number(f.value) || 0) * ppb);
+                                          const curSft = curPcs * (ppb > 0 ? perBoxSft / ppb : perBoxSft);
+                                          setSftInputs((prev) => ({ ...prev, [rowKey]: curPcs > 0 ? String(curSft) : "" }));
+                                        }
                                       }}
                                       className="h-6"
                                     >
