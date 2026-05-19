@@ -68,8 +68,16 @@ export async function up(knex: Knex): Promise<void> {
     CREATE INDEX IF NOT EXISTS lead_visits_date_idx   ON public.lead_visits(dealer_id, visit_date);
   `);
 
-  // touch trigger for updated_at
+  // touch trigger for updated_at (ensure shared function exists)
   await knex.raw(`
+    CREATE OR REPLACE FUNCTION public.tg_set_updated_at()
+    RETURNS trigger AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
     DROP TRIGGER IF EXISTS trg_leads_updated_at ON public.leads;
     CREATE TRIGGER trg_leads_updated_at
       BEFORE UPDATE ON public.leads
