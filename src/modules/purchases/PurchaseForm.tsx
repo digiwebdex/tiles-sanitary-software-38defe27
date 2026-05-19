@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, Search, Package, AlertTriangle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { enrichItemsWithSqft } from "@/lib/tileSqftEnrich";
 import { ceilBoxesFromSft } from "@/lib/tileRounding";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
