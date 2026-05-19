@@ -70,4 +70,16 @@ export const warehouseService = {
     vpsAuthedFetch(`/api/warehouses/transfers?dealerId=${dealerId}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
     }).then(j),
+  requestTransfer: (dealerId: string, data: Partial<WarehouseTransfer>) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/request?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    }).then(j),
+  approveTransfer: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/${id}/approve?dealerId=${dealerId}`, { method: "POST" }).then(j),
+  rejectTransfer: (id: string, dealerId: string, reason?: string) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/${id}/reject?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }),
+    }).then(j),
+  receiveTransfer: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/${id}/receive?dealerId=${dealerId}`, { method: "POST" }).then(j),
 };
