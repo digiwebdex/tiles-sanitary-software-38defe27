@@ -86,4 +86,34 @@ export const employeeService = {
     vpsAuthedFetch(`/api/employees/${id}/salary-payments?dealerId=${dealerId}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
     }).then(j) as Promise<SalaryPayment>,
+
+  // Attendance
+  attendance: (dealerId: string, params: { from?: string; to?: string; employee_id?: string } = {}) => {
+    const qs = new URLSearchParams({ dealerId, ...(params as any) });
+    return vpsAuthedFetch(`/api/employees/attendance?${qs}`).then(j) as Promise<any[]>;
+  },
+  markAttendance: (dealerId: string, data: { employee_id: string; att_date: string; status: string; check_in?: string; check_out?: string; notes?: string }) =>
+    vpsAuthedFetch(`/api/employees/attendance?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    }).then(j),
+  bulkAttendance: (dealerId: string, att_date: string, entries: Array<{ employee_id: string; status: string }>) =>
+    vpsAuthedFetch(`/api/employees/attendance/bulk?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ att_date, entries }),
+    }).then(j),
+  attendanceSummary: (dealerId: string, period: string) =>
+    vpsAuthedFetch(`/api/employees/attendance/summary?dealerId=${dealerId}&period=${period}`).then(j) as Promise<any[]>,
+  deleteAttendance: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/employees/attendance/${id}?dealerId=${dealerId}`, { method: "DELETE" }),
+
+  // Advances
+  advances: (dealerId: string, params: { employee_id?: string; status?: string } = {}) => {
+    const qs = new URLSearchParams({ dealerId, ...(params as any) });
+    return vpsAuthedFetch(`/api/employees/advances?${qs}`).then(j) as Promise<any[]>;
+  },
+  issueAdvance: (id: string, dealerId: string, data: { amount: number; payment_method: "cash" | "bank"; bank_account_id?: string | null; issue_date?: string; notes?: string }) =>
+    vpsAuthedFetch(`/api/employees/${id}/advances?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    }).then(j),
+  cancelAdvance: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/employees/advances/${id}?dealerId=${dealerId}`, { method: "DELETE" }),
 };

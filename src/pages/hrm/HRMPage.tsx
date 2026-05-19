@@ -13,7 +13,7 @@ import { useDealerId } from "@/hooks/useDealerId";
 import { employeeService, Employee } from "@/services/employeeService";
 import { bankAccountService } from "@/services/bankAccountService";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Users, Wallet, Settings2 } from "lucide-react";
+import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyEmp = {
@@ -40,6 +40,16 @@ const HRMPage = () => {
   const [payMethod, setPayMethod] = useState<"cash" | "bank">("cash");
   const [payBank, setPayBank] = useState<string>("");
   const [filterPeriod, setFilterPeriod] = useState("");
+
+  // Attendance
+  const today = new Date().toISOString().slice(0, 10);
+  const [attDate, setAttDate] = useState(today);
+  const [bulkStatus, setBulkStatus] = useState<Record<string, string>>({});
+  const [attPeriod, setAttPeriod] = useState(new Date().toISOString().slice(0, 7));
+
+  // Advances
+  const [advFor, setAdvFor] = useState<Employee | null>(null);
+  const [advForm, setAdvForm] = useState({ amount: 0, payment_method: "cash" as "cash" | "bank", bank_account_id: "", notes: "" });
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["employees", dealerId],
@@ -73,6 +83,51 @@ const HRMPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // Attendance queries & mutations
+  const { data: attRows = [] } = useQuery({
+    queryKey: ["attendance", dealerId, attDate],
+    queryFn: () => employeeService.attendance(dealerId, { from: attDate, to: attDate }),
+    enabled: !!dealerId && tab === "attendance",
+  });
+  const { data: attSummary = [] } = useQuery({
+    queryKey: ["attendance-summary", dealerId, attPeriod],
+    queryFn: () => employeeService.attendanceSummary(dealerId, attPeriod),
+    enabled: !!dealerId && tab === "attendance",
+  });
+  const saveBulk = useMutation({
+    mutationFn: () => {
+      const entries = Object.entries(bulkStatus)
+        .filter(([, s]) => s)
+        .map(([employee_id, status]) => ({ employee_id, status }));
+      if (!entries.length) throw new Error("Mark at least one employee");
+      return employeeService.bulkAttendance(dealerId, attDate, entries);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["attendance"] }); qc.invalidateQueries({ queryKey: ["attendance-summary"] }); setBulkStatus({}); toast.success("Attendance saved"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Advances queries & mutations
+  const { data: advances = [] } = useQuery({
+    queryKey: ["advances", dealerId],
+    queryFn: () => employeeService.advances(dealerId),
+    enabled: !!dealerId && tab === "advances",
+  });
+  const issueAdvance = useMutation({
+    mutationFn: () => employeeService.issueAdvance(advFor!.id, dealerId, {
+      amount: Number(advForm.amount),
+      payment_method: advForm.payment_method,
+      bank_account_id: advForm.payment_method === "bank" ? advForm.bank_account_id : null,
+      notes: advForm.notes || undefined,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["advances"] }); setAdvFor(null); setAdvForm({ amount: 0, payment_method: "cash", bank_account_id: "", notes: "" }); toast.success("Advance issued"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const cancelAdv = useMutation({
+    mutationFn: (id: string) => employeeService.cancelAdvance(id, dealerId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["advances"] }); toast.success("Advance cancelled"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const openStruct = async (emp: Employee) => {
     setStructFor(emp);
     const s = await employeeService.getStructure(emp.id, dealerId);
@@ -91,6 +146,8 @@ const HRMPage = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="employees">Employees</TabsTrigger>
+          <TabsTrigger value="attendance"><CalendarCheck className="h-4 w-4 mr-1" />Attendance</TabsTrigger>
+          <TabsTrigger value="advances"><HandCoins className="h-4 w-4 mr-1" />Advances</TabsTrigger>
           <TabsTrigger value="payments">Salary Payments</TabsTrigger>
         </TabsList>
 
@@ -134,6 +191,7 @@ const HRMPage = () => {
                         <TableCell><Badge variant={e.status === "active" ? "default" : "secondary"}>{e.status}</Badge></TableCell>
                         <TableCell className="space-x-2">
                           <Button size="sm" variant="outline" onClick={() => openStruct(e)}><Settings2 className="h-3 w-3 mr-1" />Salary Setup</Button>
+                          <Button size="sm" variant="outline" onClick={() => setAdvFor(e)}><HandCoins className="h-3 w-3 mr-1" />Advance</Button>
                           <Button size="sm" onClick={() => { setPayFor(e); setPayMethod("cash"); setPayBank(""); }}><Wallet className="h-3 w-3 mr-1" />Pay</Button>
                         </TableCell>
                       </TableRow>
@@ -142,6 +200,116 @@ const HRMPage = () => {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="attendance" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5 text-primary" />Daily Attendance</CardTitle>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Date</Label>
+                <Input type="date" value={attDate} onChange={e => setAttDate(e.target.value)} className="w-40" />
+                <Button size="sm" onClick={() => saveBulk.mutate()} disabled={saveBulk.isPending}>Save Marks</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Employee</TableHead><TableHead>Designation</TableHead>
+                  <TableHead>Today's Mark</TableHead><TableHead>Status (saved)</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {employees.filter(e => e.status === "active").map(e => {
+                    const saved = attRows.find((r: any) => r.employee_id === e.id);
+                    return (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">{e.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{e.designation || "—"}</TableCell>
+                        <TableCell>
+                          <Select value={bulkStatus[e.id] ?? saved?.status ?? ""} onValueChange={(v) => setBulkStatus({ ...bulkStatus, [e.id]: v })}>
+                            <SelectTrigger className="w-36"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="present">Present</SelectItem>
+                              <SelectItem value="absent">Absent</SelectItem>
+                              <SelectItem value="leave">Leave</SelectItem>
+                              <SelectItem value="half">Half Day</SelectItem>
+                              <SelectItem value="late">Late</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>{saved ? <Badge variant="outline">{saved.status}</Badge> : <span className="text-muted-foreground text-xs">unmarked</span>}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Monthly Summary</CardTitle>
+              <Input type="month" value={attPeriod} onChange={e => setAttPeriod(e.target.value)} className="w-40" />
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Employee</TableHead><TableHead className="text-right">Present</TableHead>
+                  <TableHead className="text-right">Absent</TableHead><TableHead className="text-right">Leave</TableHead>
+                  <TableHead className="text-right">Half</TableHead><TableHead className="text-right">Late</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {attSummary.map((s: any) => (
+                    <TableRow key={s.employee_id}>
+                      <TableCell className="font-medium">{s.employee_name}</TableCell>
+                      <TableCell className="text-right font-mono text-green-500">{s.present}</TableCell>
+                      <TableCell className="text-right font-mono text-red-500">{s.absent}</TableCell>
+                      <TableCell className="text-right font-mono">{s.leave}</TableCell>
+                      <TableCell className="text-right font-mono">{s.half}</TableCell>
+                      <TableCell className="text-right font-mono text-amber-500">{s.late}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{s.total_days}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!attSummary.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No attendance for {attPeriod}.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="advances">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><HandCoins className="h-5 w-5 text-primary" />Salary Advances</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">Open advances are auto-deducted from the next monthly salary payment.</p>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Date</TableHead><TableHead>Employee</TableHead>
+                  <TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Settled</TableHead>
+                  <TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {advances.map((a: any) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="text-xs">{new Date(a.issue_date).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-medium">{a.employee_name}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(Number(a.amount))}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(Number(a.settled_amount))}</TableCell>
+                      <TableCell><Badge variant="outline">{a.payment_method}</Badge></TableCell>
+                      <TableCell><Badge variant={a.status === "open" ? "default" : "secondary"}>{a.status}</Badge></TableCell>
+                      <TableCell>
+                        {a.status === "open" && (
+                          <Button size="sm" variant="ghost" onClick={() => cancelAdv.mutate(a.id)}><Trash2 className="h-3 w-3" /></Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!advances.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No advances issued.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -233,6 +401,39 @@ const HRMPage = () => {
               </div>
             )}
             <Button className="w-full" onClick={() => payRoll.mutate()} disabled={payRoll.isPending || (payMethod === "bank" && !payBank)}>Disburse</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Advance issuance dialog */}
+      <Dialog open={!!advFor} onOpenChange={(o) => !o && setAdvFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Issue Advance — {advFor?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Amount *</Label><Input type="number" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: Number(e.target.value) })} /></div>
+            <div>
+              <Label>Payment Method</Label>
+              <Select value={advForm.payment_method} onValueChange={(v: any) => setAdvForm({ ...advForm, payment_method: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank">Bank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {advForm.payment_method === "bank" && (
+              <div>
+                <Label>Bank Account *</Label>
+                <Select value={advForm.bank_account_id} onValueChange={(v) => setAdvForm({ ...advForm, bank_account_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select bank" /></SelectTrigger>
+                  <SelectContent>
+                    {banks.filter(b => b.is_active).map(b => <SelectItem key={b.id} value={b.id}>{b.bank_name} — {b.account_number}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div><Label>Notes</Label><Input value={advForm.notes} onChange={e => setAdvForm({ ...advForm, notes: e.target.value })} /></div>
+            <Button className="w-full" onClick={() => issueAdvance.mutate()} disabled={issueAdvance.isPending || advForm.amount <= 0 || (advForm.payment_method === "bank" && !advForm.bank_account_id)}>Issue Advance</Button>
           </div>
         </DialogContent>
       </Dialog>
