@@ -76,6 +76,8 @@ import AutoPoDraftPage from "./pages/purchases/AutoPoDraftPage";
 import CustomerStatementPage from "./pages/customers/CustomerStatementPage";
 import CustomerStatementsBulkPage from "./pages/customers/CustomerStatementsBulkPage";
 import LeadsPage from "./pages/leads/LeadsPage";
+import LeadVisitRegisterPage from "./pages/leads/LeadVisitRegisterPage";
+import LeadOptionsPage from "./pages/leads/LeadOptionsPage";
 import SingleSmsPage from "./pages/sms/SingleSmsPage";
 import FileManagerPage from "./pages/files/FileManagerPage";
 import HolidaysPage from "./pages/holidays/HolidaysPage";
