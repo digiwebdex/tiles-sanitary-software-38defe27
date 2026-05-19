@@ -213,4 +213,160 @@ router.post('/:id/salary-payments', async (req, res) => {
   }
 });
 
+// ─────────────────────────── Attendance ───────────────────────────
+const AttendanceSchema = z.object({
+  employee_id: z.string().uuid(),
+  att_date: z.string(),
+  status: z.enum(['present', 'absent', 'leave', 'half', 'late']),
+  check_in: z.string().max(8).optional().nullable(),
+  check_out: z.string().max(8).optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+
+router.get('/attendance', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  const { from, to, employee_id } = req.query as Record<string, string | undefined>;
+  const q = db('employee_attendance as a')
+    .leftJoin('employees as e', 'e.id', 'a.employee_id')
+    .where('a.dealer_id', dealerId)
+    .select('a.*', 'e.name as employee_name', 'e.designation')
+    .orderBy([{ column: 'a.att_date', order: 'desc' }, { column: 'e.name' }]);
+  if (from) q.where('a.att_date', '>=', from);
+  if (to) q.where('a.att_date', '<=', to);
+  if (employee_id) q.where('a.employee_id', employee_id);
+  res.json(await q);
+});
+
+router.post('/attendance', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const p = AttendanceSchema.safeParse(req.body);
+  if (!p.success) { res.status(400).json({ error: p.error.flatten() }); return; }
+  const [row] = await db('employee_attendance')
+    .insert({ dealer_id: dealerId, ...p.data, created_by: req.user?.userId ?? null })
+    .onConflict(['dealer_id', 'employee_id', 'att_date'])
+    .merge({ status: p.data.status, check_in: p.data.check_in ?? null, check_out: p.data.check_out ?? null, notes: p.data.notes ?? null })
+    .returning('*');
+  res.status(201).json(row);
+});
+
+router.post('/attendance/bulk', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const Body = z.object({ att_date: z.string(), entries: z.array(AttendanceSchema.omit({ att_date: true })) });
+  const p = Body.safeParse(req.body);
+  if (!p.success) { res.status(400).json({ error: p.error.flatten() }); return; }
+  const trx = await db.transaction();
+  try {
+    for (const e of p.data.entries) {
+      await trx('employee_attendance')
+        .insert({ dealer_id: dealerId, att_date: p.data.att_date, ...e, created_by: req.user?.userId ?? null })
+        .onConflict(['dealer_id', 'employee_id', 'att_date'])
+        .merge({ status: e.status, check_in: e.check_in ?? null, check_out: e.check_out ?? null, notes: e.notes ?? null });
+    }
+    await trx.commit();
+    res.status(201).json({ saved: p.data.entries.length });
+  } catch (err: any) { await trx.rollback(); res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/attendance/:id', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  await db('employee_attendance').where({ id: req.params.id, dealer_id: dealerId }).delete();
+  res.status(204).end();
+});
+
+router.get('/attendance/summary', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  const period = (req.query.period as string) || new Date().toISOString().slice(0, 7);
+  const rows = await db('employee_attendance as a')
+    .leftJoin('employees as e', 'e.id', 'a.employee_id')
+    .where('a.dealer_id', dealerId)
+    .whereRaw(`to_char(a.att_date, 'YYYY-MM') = ?`, [period])
+    .groupBy('a.employee_id', 'e.name', 'e.designation')
+    .select(
+      'a.employee_id',
+      'e.name as employee_name',
+      'e.designation',
+      db.raw(`count(*) filter (where a.status='present') as present`),
+      db.raw(`count(*) filter (where a.status='absent') as absent`),
+      db.raw(`count(*) filter (where a.status='leave') as leave`),
+      db.raw(`count(*) filter (where a.status='half') as half`),
+      db.raw(`count(*) filter (where a.status='late') as late`),
+      db.raw(`count(*) as total_days`),
+    );
+  res.json(rows);
+});
+
+// ─────────────────────────── Salary Advances ──────────────────────
+const AdvanceSchema = z.object({
+  amount: z.coerce.number().positive(),
+  payment_method: z.enum(['cash', 'bank']).default('cash'),
+  bank_account_id: z.string().uuid().optional().nullable(),
+  issue_date: z.string().optional(),
+  notes: z.string().optional().nullable(),
+});
+
+router.get('/advances', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const { employee_id, status } = req.query as Record<string, string | undefined>;
+  const q = db('salary_advances as a')
+    .leftJoin('employees as e', 'e.id', 'a.employee_id')
+    .where('a.dealer_id', dealerId)
+    .select('a.*', 'e.name as employee_name', 'e.designation')
+    .orderBy('a.issue_date', 'desc');
+  if (employee_id) q.where('a.employee_id', employee_id);
+  if (status) q.where('a.status', status);
+  res.json(await q);
+});
+
+router.post('/:id/advances', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const p = AdvanceSchema.safeParse(req.body);
+  if (!p.success) { res.status(400).json({ error: p.error.flatten() }); return; }
+  const employeeId = req.params.id;
+  const trx = await db.transaction();
+  try {
+    const [row] = await trx('salary_advances').insert({
+      dealer_id: dealerId, employee_id: employeeId,
+      amount: p.data.amount,
+      payment_method: p.data.payment_method,
+      bank_account_id: p.data.payment_method === 'bank' ? (p.data.bank_account_id ?? null) : null,
+      issue_date: p.data.issue_date ?? trx.fn.now(),
+      notes: p.data.notes ?? null,
+      created_by: req.user?.userId ?? null,
+    }).returning('*');
+
+    const emp = await trx('employees').where({ id: employeeId }).first();
+    const desc = `Salary advance — ${emp?.name ?? 'Employee'}`;
+    if (p.data.payment_method === 'bank') {
+      if (!p.data.bank_account_id) throw new Error('bank_account_id required for bank payment');
+      await trx('bank_ledger').insert({
+        dealer_id: dealerId, bank_account_id: p.data.bank_account_id,
+        type: 'advance', amount: -Number(p.data.amount), description: desc,
+        reference_type: 'salary_advance', reference_id: row.id,
+        entry_date: row.issue_date, created_by: req.user?.userId ?? null,
+      });
+    } else {
+      await trx('cash_ledger').insert({
+        dealer_id: dealerId, type: 'advance', amount: -Number(p.data.amount), description: desc,
+        reference_type: 'salary_advance', reference_id: row.id,
+        entry_date: row.issue_date, created_by: req.user?.userId ?? null,
+      });
+    }
+    await trx.commit();
+    res.status(201).json(row);
+  } catch (e: any) { await trx.rollback(); res.status(500).json({ error: e.message }); }
+});
+
+router.delete('/advances/:id', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  await db('salary_advances').where({ id: req.params.id, dealer_id: dealerId, status: 'open' })
+    .update({ status: 'cancelled' });
+  res.status(204).end();
+});
+
 export default router;
