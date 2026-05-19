@@ -146,6 +146,8 @@ const HRMPage = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="employees">Employees</TabsTrigger>
+          <TabsTrigger value="attendance"><CalendarCheck className="h-4 w-4 mr-1" />Attendance</TabsTrigger>
+          <TabsTrigger value="advances"><HandCoins className="h-4 w-4 mr-1" />Advances</TabsTrigger>
           <TabsTrigger value="payments">Salary Payments</TabsTrigger>
         </TabsList>
 
