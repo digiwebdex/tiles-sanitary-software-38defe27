@@ -217,4 +217,141 @@ router.get('/balance-sheet', async (req, res) => {
   });
 });
 
+// ── Trial Balance ──
+// Aggregates account balances as of a date. Each row has debit OR credit.
+router.get('/trial-balance', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+
+  const asOf = (req.query.asOf as string | undefined) || null;
+  const accounts: { account: string; debit: number; credit: number }[] = [];
+  const push = (account: string, value: number) => {
+    if (Math.abs(value) < 0.005) return;
+    if (value >= 0) accounts.push({ account, debit: value, credit: 0 });
+    else accounts.push({ account, debit: 0, credit: -value });
+  };
+
+  // ─ Asset accounts (normal balance: Debit) ─
+  const cashRow = await db('cash_ledger').where({ dealer_id: dealerId })
+    .modify(qb => { if (asOf) qb.where('entry_date', '<=', asOf); })
+    .sum({ total: 'amount' }).first();
+  push('Cash on Hand', num(cashRow?.total));
+
+  const banks = await db('bank_ledger as bl')
+    .join('bank_accounts as ba', 'ba.id', 'bl.bank_account_id')
+    .where('bl.dealer_id', dealerId)
+    .modify(qb => { if (asOf) qb.where('bl.entry_date', '<=', asOf); })
+    .groupBy('ba.id', 'ba.bank_name', 'ba.account_number')
+    .select('ba.bank_name', 'ba.account_number')
+    .sum({ balance: 'bl.amount' });
+  for (const b of banks) push(`Bank — ${b.bank_name} (${b.account_number})`, num(b.balance));
+
+  try {
+    const invRow = await db('stock as s')
+      .join('products as p', 'p.id', 's.product_id')
+      .where('s.dealer_id', dealerId)
+      .sum({
+        total: db.raw(`
+          CASE
+            WHEN p.unit_type = 'box_sft' THEN COALESCE(s.box_qty, 0) * COALESCE(p.cost_price, 0) * COALESCE(p.per_box_sft, 1)
+            ELSE COALESCE(s.piece_qty, 0) * COALESCE(p.cost_price, 0)
+          END
+        `),
+      }).first();
+    push('Inventory', num(invRow?.total));
+  } catch { /* ignore */ }
+
+  try {
+    const arRow = await db('sales').where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('sale_date', '<=', asOf); })
+      .sum({ total: db.raw('GREATEST(0, COALESCE(total_amount,0) - COALESCE(paid_amount,0))') }).first();
+    push('Accounts Receivable', num(arRow?.total));
+  } catch { /* ignore */ }
+
+  // ─ Liability accounts (normal balance: Credit → negative debit) ─
+  try {
+    const apRow = await db('supplier_ledger').where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('entry_date', '<=', asOf); })
+      .sum({ total: 'amount' }).first();
+    const ap = Math.max(0, num(apRow?.total));
+    if (ap > 0) push('Accounts Payable', -ap);
+  } catch { /* ignore */ }
+
+  // ─ Equity ─
+  try {
+    const dRows = await db('director_transactions').where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('entry_date', '<=', asOf); })
+      .select('type').sum({ total: 'amount' }).groupBy('type');
+    let dc = 0;
+    for (const r of dRows as any[]) {
+      const amt = num(r.total);
+      if (r.type === 'deposit') dc += amt;
+      else if (r.type === 'withdrawal' || r.type === 'dividend') dc -= amt;
+    }
+    if (Math.abs(dc) > 0.005) push('Director Capital', -dc);
+  } catch { /* ignore */ }
+
+  // ─ Income accounts (Credit) ─
+  try {
+    const revRow = await db('sales').where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('sale_date', '<=', asOf); })
+      .sum({ total: 'total_amount' }).first();
+    const rev = num(revRow?.total);
+    if (rev > 0) push('Sales Revenue', -rev);
+  } catch { /* ignore */ }
+
+  try {
+    const srRow = await db('sales_returns').where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('return_date', '<=', asOf); })
+      .sum({ total: db.raw('qty * COALESCE(rate, 0)') }).first();
+    const sr = num(srRow?.total);
+    if (sr > 0) push('Sales Returns', sr); // contra-revenue (Debit)
+  } catch { /* ignore */ }
+
+  // ─ Expense accounts (Debit) ─
+  try {
+    const cogsRow = await db('sale_items as si')
+      .join('sales as s', 's.id', 'si.sale_id')
+      .where('s.dealer_id', dealerId)
+      .modify(qb => { if (asOf) qb.where('s.sale_date', '<=', asOf); })
+      .sum({ total: db.raw('si.quantity * COALESCE(si.cost_price, 0)') }).first();
+    push('Cost of Goods Sold', num(cogsRow?.total));
+  } catch { /* ignore */ }
+
+  try {
+    const expRows = await db('expenses').where({ dealer_id: dealerId })
+      .modify(qb => { if (asOf) qb.where('expense_date', '<=', asOf); })
+      .select('category').sum({ total: 'amount' }).groupBy('category');
+    for (const r of expRows as any[]) push(`Expense — ${r.category || 'Uncategorized'}`, num(r.total));
+  } catch { /* ignore */ }
+
+  // ─ Manual journal lines (added on top, per-account net) ─
+  try {
+    const jRows = await db('journal_entry_lines as jel')
+      .join('journal_entries as je', 'je.id', 'jel.journal_entry_id')
+      .where('jel.dealer_id', dealerId)
+      .modify(qb => { if (asOf) qb.where('je.entry_date', '<=', asOf); })
+      .select('jel.account')
+      .sum({ debit: 'jel.debit' })
+      .sum({ credit: 'jel.credit' })
+      .groupBy('jel.account');
+    for (const r of jRows as any[]) {
+      const net = num(r.debit) - num(r.credit);
+      push(`Journal — ${r.account}`, net);
+    }
+  } catch { /* ignore */ }
+
+  accounts.sort((a, b) => a.account.localeCompare(b.account));
+  const total_debit = accounts.reduce((s, r) => s + r.debit, 0);
+  const total_credit = accounts.reduce((s, r) => s + r.credit, 0);
+
+  res.json({
+    as_of: asOf,
+    accounts,
+    total_debit,
+    total_credit,
+    difference: +(total_debit - total_credit).toFixed(2),
+  });
+});
+
 export default router;

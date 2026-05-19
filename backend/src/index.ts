@@ -71,6 +71,7 @@ import customerStatementsRoutes from './routes/customerStatements';
 import leadsRoutes from './routes/leads';
 import filesRoutes from './routes/files';
 import holidaysRoutes from './routes/holidays';
+import journalRoutes from './routes/journal';
 import path from 'path';
 
 const app = express();
@@ -222,6 +223,7 @@ app.use('/api/customer-statements', customerStatementsRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/holidays', holidaysRoutes);
+app.use('/api/journal', journalRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
