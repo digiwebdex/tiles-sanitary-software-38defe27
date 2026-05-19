@@ -67,6 +67,7 @@ import FinancialStatementsPage from "./pages/financials/FinancialStatementsPage"
 import JournalPage from "./pages/journal/JournalPage";
 import EmiPage from "./pages/emi/EmiPage";
 import HRMPage from "./pages/hrm/HRMPage";
+import LeavesPage from "./pages/hrm/LeavesPage";
 import DirectorsPage from "./pages/directors/DirectorsPage";
 import WarehousesPage from "./pages/warehouses/WarehousesPage";
 import Phase3ReportsPage from "./pages/reports/Phase3ReportsPage";
@@ -213,6 +214,7 @@ const App = () => (
             <Route path="/journal" element={<ProtectedRoute><AppLayout><JournalPage /></AppLayout></ProtectedRoute>} />
             <Route path="/emi" element={<ProtectedRoute><AppLayout><EmiPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm" element={<ProtectedRoute><AppLayout><HRMPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/hrm/leaves" element={<ProtectedRoute><AppLayout><LeavesPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/warehouses" element={<ProtectedRoute><AppLayout><WarehousesPage /></AppLayout></ProtectedRoute>} />
             <Route path="/reports/operations" element={<ProtectedRoute><AppLayout><Phase3ReportsPage /></AppLayout></ProtectedRoute>} />
