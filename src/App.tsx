@@ -72,6 +72,7 @@ import DirectorVoucherPage from "./pages/vouchers/DirectorVoucherPage";
 import AutoPoDraftPage from "./pages/purchases/AutoPoDraftPage";
 import CustomerStatementPage from "./pages/customers/CustomerStatementPage";
 import CustomerStatementsBulkPage from "./pages/customers/CustomerStatementsBulkPage";
+import LeadsPage from "./pages/leads/LeadsPage";
 
 // Super Admin
 import SuperAdminLayout from "./pages/super-admin/SuperAdminLayout";
