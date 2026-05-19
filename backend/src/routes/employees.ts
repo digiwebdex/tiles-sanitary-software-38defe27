@@ -53,6 +53,7 @@ const EmployeeSchema = z.object({
   joining_date: z.string().optional().nullable(),
   status: z.enum(['active', 'inactive', 'terminated']).default('active'),
   notes: z.string().optional().nullable(),
+  shift_id: z.string().uuid().nullable().optional(),
 });
 
 const StructureSchema = z.object({
