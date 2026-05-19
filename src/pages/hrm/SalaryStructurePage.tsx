@@ -169,13 +169,13 @@ const SalaryStructurePage = () => {
     [componentsQ.data]
   );
 
-  const employees = employeesQ.data?.rows ?? [];
+  const employees = employeesQ.data ?? [];
 
   // when employee changes, prefill basic preview using their base_salary if present
   const setActiveEmployee = (id: string) => {
     setEmployeeId(id);
     const emp = employees.find((e: any) => e.id === id);
-    setBasicForPreview(Number(emp?.base_salary ?? emp?.basic_salary ?? 0) || 0);
+    setBasicForPreview(Number(emp?.basic ?? emp?.base_salary ?? emp?.basic_salary ?? 0) || 0);
   };
 
   return (
