@@ -16,6 +16,10 @@ async function vpsRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
 export interface PurchaseItemInput {
   product_id: string;
   quantity: number;
+  /** Phase T4: canonical SQFT for tile (stock_base_unit='sqft') items. */
+  qty_sqft?: number;
+  /** Phase T4: pricing unit context: per_piece | per_box | per_sqft. */
+  rate_unit?: "per_piece" | "per_box" | "per_sqft";
   purchase_rate: number;
   offer_price: number;
   transport_cost: number;
