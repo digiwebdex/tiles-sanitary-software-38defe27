@@ -231,7 +231,15 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form
+        onSubmit={form.handleSubmit(async (values) => {
+          // Phase T4b: for tile products on SQFT base, attach qty_sqft + rate_unit per line.
+          const map = new Map(products.map((p) => [p.id, p]));
+          const enriched = enrichItemsWithSqft(values.items as any[], map as any, { defaultRateUnit: "per_sqft" });
+          await onSubmit({ ...values, items: enriched } as PurchaseFormValues);
+        })}
+        className="space-y-5"
+      >
         {/* Top section: Reference, Date */}
         <Card>
           <CardContent className="pt-5">
