@@ -46,6 +46,7 @@ const navItems = [
   { path: "/journal", label: "Journal Entries", icon: BookOpen, dealerAdminOnly: true },
   { path: "/emi", label: "EMI Plans", icon: CalendarClock, dealerAdminOnly: true },
   { path: "/hrm", label: "HRM (Employees)", icon: Users, dealerAdminOnly: true },
+  { path: "/hrm/leaves", label: "Leave Management", icon: CalendarDays, dealerAdminOnly: true },
   { path: "/holidays", label: "Holidays", icon: CalendarDays, dealerAdminOnly: true },
   { path: "/directors", label: "Directors", icon: Crown, dealerAdminOnly: true },
   { path: "/warehouses", label: "Warehouses", icon: Warehouse, dealerAdminOnly: true },
