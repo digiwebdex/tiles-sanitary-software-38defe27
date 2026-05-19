@@ -68,6 +68,7 @@ import warehousesRoutes from './routes/warehouses';
 import phase3ReportsRoutes from './routes/phase3Reports';
 import autoPoRoutes from './routes/autoPo';
 import customerStatementsRoutes from './routes/customerStatements';
+import leadsRoutes from './routes/leads';
 import path from 'path';
 
 const app = express();
