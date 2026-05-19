@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDealerId } from "@/hooks/useDealerId";
 import { employeeService, Employee } from "@/services/employeeService";
 import { bankAccountService } from "@/services/bankAccountService";
+import { shiftService } from "@/services/shiftService";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2 } from "lucide-react";
+import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2, Clock, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { FileText } from "lucide-react";
