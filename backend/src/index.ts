@@ -79,6 +79,7 @@ import leavesRoutes from './routes/leaves';
 import salaryComponentsRoutes from './routes/salaryComponents';
 import employeeDocumentsRoutes from './routes/employeeDocuments';
 import shiftsRoutes from './routes/shifts';
+import performanceRoutes from './routes/performance';
 import path from 'path';
 
 const app = express();
