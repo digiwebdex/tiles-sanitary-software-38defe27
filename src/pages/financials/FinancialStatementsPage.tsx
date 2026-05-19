@@ -132,6 +132,58 @@ const FinancialStatementsPage = () => {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="tb" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <Label>As of</Label>
+              <Input type="date" value={tb.asOf} onChange={e => setTb({ asOf: e.target.value })} className="max-w-xs" />
+            </CardContent>
+          </Card>
+
+          {tbLoading ? <p>Loading…</p> : trial && (
+            <Card>
+              <CardHeader><CardTitle>Trial Balance — as of {trial.as_of ?? "today"}</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Account</TableHead>
+                      <TableHead className="text-right">Debit</TableHead>
+                      <TableHead className="text-right">Credit</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {trial.accounts.map((a, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{a.account}</TableCell>
+                        <TableCell className="text-right font-mono">{a.debit ? formatCurrency(a.debit) : "—"}</TableCell>
+                        <TableCell className="text-right font-mono">{a.credit ? formatCurrency(a.credit) : "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!trial.accounts.length && (
+                      <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No balances</TableCell></TableRow>
+                    )}
+                    <TableRow className="bg-primary/10 border-t-2 font-bold">
+                      <TableCell>Totals</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(trial.total_debit)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(trial.total_credit)}</TableCell>
+                    </TableRow>
+                    {Math.abs(trial.difference) > 0.01 && (
+                      <TableRow className="bg-red-500/10">
+                        <TableCell className="font-semibold text-red-500">Difference (out of balance)</TableCell>
+                        <TableCell colSpan={2} className="text-right font-mono text-red-500">{formatCurrency(trial.difference)}</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Note: this is a derived trial balance from operational ledgers (cash, bank, sales, expenses, COGS, journal entries). Small differences are expected since revenue/expense closing entries are computed, not posted.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
