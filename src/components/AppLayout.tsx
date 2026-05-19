@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Receipt, RotateCcw,
   BookOpen, BarChart3, LogOut, Settings, Clock, Truck, Users, ShieldCheck, FileText,
   Undo2, MapPin, Zap, Gift, Wallet, FileSignature, Folder, HandCoins, MonitorSpeaker,
-  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale, Warehouse, ClipboardCheck, Sparkles, CalendarDays, AlertTriangle, CalendarClock,
+  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale, Warehouse, ClipboardCheck, Sparkles, CalendarDays, AlertTriangle, CalendarClock, Building2, Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDealerId } from "@/hooks/useDealerId";
@@ -63,6 +63,8 @@ const navItems = [
   { path: "/admin/portal-requests", label: "Portal Requests", icon: Inbox, dealerAdminOnly: true },
   { path: "/user-guide", label: "User Guide", icon: HelpCircle, readonlyAllowed: true },
   { path: "/subscription", label: "Subscription", icon: Crown, dealerAdminOnly: true, readonlyAllowed: true },
+  { path: "/notices", label: "Notice Board", icon: Megaphone, readonlyAllowed: true },
+  { path: "/settings/branches", label: "Manage Branches", icon: Building2, dealerAdminOnly: true },
   { path: "/settings", label: "Settings", icon: Settings, readonlyAllowed: false },
 ];
 
