@@ -239,6 +239,7 @@ app.use('/api/leaves', leavesRoutes);
 app.use('/api/salary-components', salaryComponentsRoutes);
 app.use('/api/employee-documents', employeeDocumentsRoutes);
 app.use('/api/shifts', shiftsRoutes);
+app.use('/api/performance', performanceRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
