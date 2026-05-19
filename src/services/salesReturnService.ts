@@ -24,6 +24,10 @@ export interface CreateSalesReturnInput {
   sale_id: string;
   product_id: string;
   qty: number;
+  /** Phase T4: canonical SQFT for tile (stock_base_unit='sqft') items. */
+  qty_sqft?: number;
+  /** Phase T4: pricing unit context: per_piece | per_box | per_sqft. */
+  rate_unit?: "per_piece" | "per_box" | "per_sqft";
   reason: string;
   is_broken: boolean;
   refund_amount: number;
