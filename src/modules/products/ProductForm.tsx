@@ -31,6 +31,7 @@ import { formatCurrency } from "@/lib/utils";
 import { productService } from "@/services/productService";
 import { uploadProductImage, resolveImageUrl } from "@/lib/uploads";
 import { toast } from "sonner";
+import MigrateToSqftButton from "@/modules/products/MigrateToSqftButton";
 
 interface ProductFormProps {
   defaultValues?: Partial<ProductFormValues>;
