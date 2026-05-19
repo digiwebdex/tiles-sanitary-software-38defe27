@@ -1,81 +1,122 @@
-## Phase 2C — Sales path: Box+Pc+SFT input, `total_pieces` writes, stock_ledger audit
+## Screenshot vs TilesERP — Feature Comparison
 
-লক্ষ্য: Purchase-এর পর এখন Sale path-কেও dual-unit (Box + Piece + SFT) করতে হবে।
-- Salesman একই টাইল বিক্রিতে box ও extra pieces (যেমন `5 box + 3 pcs`) বা শুধু SFT দিয়ে quantity দিতে পারবে।
-- Backend FIFO/legacy দুই পথেই `total_pieces` সঠিকভাবে ডিডাক্ট হবে এবং প্রতি item-এ `stock_ledger` audit row লেখা হবে।
-- Cancel/Edit-এ symmetric restore হবে (RPC ইতিমধ্যে updated — ২B-শেষে migration গেছে)।
-
-Out of scope (পরবর্তী 2D-তে): Sales return restocking, reservations consumption display, Challan/Delivery item totals — পৃথক phase-এ।
+Screenshot-এ মোট ৭টি section ও ~৫০টি module আছে। আপনার software-এ কী আছে আর কী নেই:
 
 ---
 
-### A. Schema check (no migration আশা করি)
-
-`sale_items` টেবিলে `box_qty`, `piece_qty`, `total_pieces` কলাম migration 018 দিয়ে আগেই যোগ হয়েছে — verify করব। যদি না থাকে, ছোট migration যোগ করব (additive only)।
-
-### B. Frontend — `src/modules/sales/saleSchema.ts`
-
-`saleItemSchema` এ পরিবর্তন:
-- `quantity` field-কে computed হিসেবে রাখব (legacy backend compat)
-- নতুন fields: `box_qty` (≥0), `piece_qty` (≥0), `entry_mode: 'box_piece' | 'sft'`
-- Validation: `box_qty + piece_qty > 0` অথবা SFT-mode-এ `quantity > 0`
-- Tile (box_sft + ppb>1): UI দেখাবে Box + Pc inputs পাশাপাশি SFT preview
-- Sanitary (piece): শুধু Pc input
-- Tile কিন্তু SFT-mode toggle: শুধু SFT input → backend-এর জন্য box_qty = floor(sft / per_box_sft), piece_qty = round((sft % per_box_sft)/per_box_sft * ppb)
-
-### C. Frontend — `src/modules/sales/SaleForm.tsx`
-
-প্রতি sale item row-এ:
-- ছোট segmented toggle: **Box+Pc** | **SFT** (শুধু tile-এ visible)
-- Box+Pc মোডে দুটো numeric input + below: `≈ X.XX SFT` preview
-- SFT মোডে একটিই input + below: `≈ A box B pcs` preview
-- Stock availability hint `<TileStockBadge>` দিয়ে — `Available: 7 box 9 pcs (≈ 169.4 SFT)`
-- Submit-এ `quantity` field auto-compute করব (box-unit products: `box_qty + piece_qty/ppb` decimal; piece products: `piece_qty`) — backend backward-compat বজায় থাকবে।
-
-### D. Backend — `POST /api/sales`
-
-`backend/src/routes/sales.ts` (lines ~290-650):
-1. `sale_items` schema — accept optional `box_qty`, `piece_qty`. যদি না আসে, legacy `quantity` থেকে derive (tile: `box=floor(q)`, `piece=round((q - floor(q)) * ppb)`; piece: `piece=q`)।
-2. Item resolution-এ `pieces_per_box` লোড (আগের মতই)। Compute `totalPieces = box_qty * ppb + piece_qty`।
-3. Stock check — `stock_before_pieces = stock.total_pieces - reserved_total_pieces`। Shortage display `formatBoxPiece` দিয়ে।
-4. `sale_items` insert-এ `box_qty`, `piece_qty`, `total_pieces` লিখব।
-5. FIFO RPC (`allocate_sale_batches`) — RPC ইতিমধ্যে total_pieces সামলায়, কিন্তু allocation `quantity` (box বা pcs single number) input নেয়। Mixed box+piece tile sale-এর জন্য আমরা allocator-কে **decimal box-equivalent** পাঠাব (`box_qty + piece_qty/ppb`)। RPC-এর math: `delta_pieces = qty * ppb` সঠিকই থাকে। কিন্তু `box_qty`/`sft_qty` decimal হয়ে যাবে — ঠিক আছে কারণ `total_pieces` source of truth। Display alternative: ভবিষ্যতে allocator-কে `total_pieces` accept করতে rewrite, এই phase-এ scope বাইরে।
-6. Legacy `deduct_stock_unbatched` — same decimal trick।
-7. **stock_ledger insert** প্রতি item-এ:
-   - `txn_type='sale_out'`, `reference_table='sales'`, `reference_id=sale.id`, `reference_no=invoice_number`
-   - `box_qty`, `piece_qty`, `pieces_per_box`, `total_pieces` (negative direction handled by sign)
-   - `stock_before_pieces`/`stock_after_pieces`/`_display`
-
-### E. Backend — `PUT /api/sales/:id` ও `DELETE /api/sales/:id` (cancel)
-
-Same dual-unit handling। RPC `restore_sale_batches` (already total_pieces-aware) ব্যবহার করব। Re-deduct path-এ একই box+piece input নেব।
-
-### F. Service — `src/services/salesService.ts`
-
-`SaleItemInput`-এ optional `box_qty`, `piece_qty` যোগ করব। Frontend-from-form mapper এই fields পাঠাবে।
-
-### G. Test plan
-
-1. Tile (ppb=12, per_box_sft=22.22) sale: `4 box + 5 pcs` → expected `total_pieces=53`, FIFO কনজিউম 53 pcs, ledger row `before=600 after=547`।
-2. SFT-mode sale: enter `120 SFT` → derive `5 box 5 pcs` (≈111.1 + 9.26 = 120.36) — round-down নাকি best-fit? Decision: floor SFT→box, residue→pcs (floor)। Preview UI-তে `≈ X SFT (back to Y SFT after rounding)` দেখাব। User কে confirm দিতে দেব।
-3. Sanitary 10 pcs sale → unchanged behavior।
-4. Edit সেল `4 box + 5 pcs` → `6 box + 0 pcs`: restore + re-deduct সঠিক।
-5. Cancel: restore সঠিক, ledger reverse rows।
-
-### H. Out of scope explicitly
-
-- Sales-return restocking with box+pc (next phase 2D)
-- Reservation create/consume Box+Pc UI (2D)
-- POS quick-sale page (separate)
-- Challan delivery line totals (2D)
-
-### I. Rollout
-
-```
-cd /var/www/tilessaas && git pull && cd backend && npm install && npm run build \
-  && pm2 restart tilessaas-backend && cd .. && npm install && npm run build
-```
+### ✅ Customer & CRM (৮টির মধ্যে ৩টি আছে)
+| Module | Status |
+|---|---|
+| Customer Opening | ✅ আছে (Customer form-এ opening balance) |
+| Customer List | ✅ আছে (`/customers`) |
+| Customer Statement | ✅ আছে (Customer Statement report) |
+| Manage Leads | ❌ নাই |
+| Leads Visiting | ❌ নাই |
+| Customer Register | ❌ নাই (আলাদা register নেই) |
+| Lead Register | ❌ নাই |
+| Visiting Register | ❌ নাই |
 
 ---
 
-Approve বললেই 2C শুরু করব — order: schema verify → schema/types → backend POST → backend PUT/DELETE → SaleForm UI → manual test।
+### ✅ Accounts (৮টির মধ্যে ৬টি আছে)
+| Module | Status |
+|---|---|
+| Account Transaction | ✅ আছে (Ledger) |
+| Ledger Transaction | ✅ আছে (`/ledger`) |
+| Cash & Bank Book | ✅ আছে (Cashbook + Bank Accounts) |
+| Receipt & Payment | ✅ আছে (Collections + Payments) |
+| Income & Expenses | ✅ আছে (Financials + Expenses) |
+| Trial Balance | ✅ আছে (Financial Statements-এ) |
+| Fund Transfer Request | ❌ নাই |
+| Product Sending Request | ❌ নাই |
+
+---
+
+### ✅ Purchase (৮টির মধ্যে ৭টি আছে)
+| Module | Status |
+|---|---|
+| Purchase Entry | ✅ আছে |
+| Purchase List | ✅ আছে |
+| Purchase Report | ✅ আছে |
+| In/Out Report | ✅ আছে (Stock movement) |
+| Warehouse Report | ✅ আছে (Warehouses) |
+| Stock Report | ✅ আছে |
+| Purchase Return | ✅ আছে |
+| Warehouse In/Out | ⚠️ আংশিক (transfer module নাই) |
+
+---
+
+### ✅ Sales (৮টির মধ্যে ৮টি আছে)
+| Module | Status |
+|---|---|
+| Sales Entry | ✅ আছে |
+| POS Sales | ✅ আছে |
+| Quick Sales | ✅ আছে (POS) |
+| Sales Return | ✅ আছে |
+| Create New Order | ✅ আছে (Quotations/Challan) |
+| Daily Order | ✅ আছে (Dashboard) |
+| Delivered Orders | ✅ আছে (Deliveries) |
+| Sales Report | ✅ আছে |
+
+---
+
+### ⚠️ HRM (৭টির মধ্যে ৩টি আছে)
+| Module | Status |
+|---|---|
+| Employee Register | ✅ আছে (HRM Page) |
+| Salary Disbursement | ✅ আছে |
+| Salary Disb. List | ✅ আছে |
+| Start Time | ❌ নাই (attendance check-in) |
+| End Time | ❌ নাই (attendance check-out) |
+| Daily Att. Report | ❌ নাই |
+| Emp. Disb. List | ⚠️ আংশিক |
+| My Payslip | ❌ নাই (employee self-service portal) |
+
+---
+
+### ⚠️ SMS & Notification (৩টির মধ্যে ১টি আছে)
+| Module | Status |
+|---|---|
+| SMS Sent History | ✅ আছে (Notification logs) |
+| Single SMS Sent | ❌ নাই (manual SMS sender) |
+| EMI Alert SMS Setup | ❌ নাই |
+
+---
+
+### ✅ Settings (৫টির মধ্যে ৪টি আছে)
+| Module | Status |
+|---|---|
+| Employee Register | ✅ আছে |
+| Director Register | ✅ আছে |
+| Closing Business Day | ✅ আছে (Cash Closing) |
+| File Manager | ❌ নাই |
+| Manage Holiday Setup | ❌ নাই |
+
+---
+
+## Summary
+
+- **মোট মিলেছে:** ~৩২/৫০ (64%)
+- **মূল ERP (Purchase, Sales, Accounts, Stock):** প্রায় ১০০% কভার ✅
+- **মিসিং features:**
+  1. **CRM / Leads Management** (Lead, Visiting, Register) — ৫টি
+  2. **HR Attendance** (Start/End Time, Daily Attendance Report, Payslip portal) — ৪টি
+  3. **Fund Transfer & Product Sending Request** workflow — ২টি
+  4. **File Manager** — ১টি
+  5. **Holiday Setup** — ১টি
+  6. **Single SMS / EMI Alert SMS** — ২টি
+
+---
+
+## পরবর্তী ধাপ
+
+কোন missing module-গুলো add করতে চান, জানান। আমার suggestion priority অনুযায়ী:
+
+1. **Leads Management** (CRM expansion) — sales pipeline-এর জন্য গুরুত্বপূর্ণ
+2. **Attendance (Start/End Time + Daily Report)** — HRM complete করার জন্য
+3. **Holiday Setup** — payroll-এর সাথে integrate হবে
+4. **Single SMS Sender** — manual reminder পাঠানোর জন্য
+5. **File Manager** — document storage
+6. **Fund Transfer Request / Product Sending Request** — multi-branch workflow
+
+কোনগুলো আগে চান বলুন, সেগুলোর জন্য detailed implementation plan দিব।
