@@ -219,7 +219,7 @@ const HRMPage = () => {
                 <Table>
                   <TableHeader><TableRow>
                     <TableHead>Code</TableHead><TableHead>Name</TableHead><TableHead>Designation</TableHead>
-                    <TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                    <TableHead>Phone</TableHead><TableHead>Shift</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {employees.map(e => (
@@ -228,6 +228,20 @@ const HRMPage = () => {
                         <TableCell className="font-medium">{e.name}</TableCell>
                         <TableCell>{e.designation || "—"}</TableCell>
                         <TableCell>{e.phone || "—"}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={e.shift_id ?? "__none"}
+                            onValueChange={(v) => assignShift.mutate({ id: e.id, shift_id: v === "__none" ? null : v })}
+                          >
+                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none">— None —</SelectItem>
+                              {shifts.filter(s => s.is_active).map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.name} ({s.start_time})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                         <TableCell><Badge variant={e.status === "active" ? "default" : "secondary"}>{e.status}</Badge></TableCell>
                         <TableCell className="space-x-2">
                           <Button size="sm" variant="outline" onClick={() => openStruct(e)}><Settings2 className="h-3 w-3 mr-1" />Salary Setup</Button>
@@ -236,7 +250,7 @@ const HRMPage = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {!employees.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No employees yet.</TableCell></TableRow>}
+                    {!employees.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No employees yet.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               )}
