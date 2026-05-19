@@ -35,6 +35,8 @@ const CreatePurchaseReturn = () => {
         items: values.items.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
+          qty_sqft: (item as any).qty_sqft,
+          rate_unit: (item as any).rate_unit,
           unit_price: item.unit_price,
           reason: item.reason,
         })),
