@@ -13,7 +13,7 @@ import { useDealerId } from "@/hooks/useDealerId";
 import { employeeService, Employee } from "@/services/employeeService";
 import { bankAccountService } from "@/services/bankAccountService";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Users, Wallet, Settings2 } from "lucide-react";
+import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyEmp = {
