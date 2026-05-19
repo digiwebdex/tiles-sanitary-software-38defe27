@@ -69,6 +69,7 @@ import phase3ReportsRoutes from './routes/phase3Reports';
 import autoPoRoutes from './routes/autoPo';
 import customerStatementsRoutes from './routes/customerStatements';
 import leadsRoutes from './routes/leads';
+import filesRoutes from './routes/files';
 import path from 'path';
 
 const app = express();
@@ -218,6 +219,7 @@ app.use('/api/reports', phase3ReportsRoutes);
 app.use('/api/auto-po', autoPoRoutes);
 app.use('/api/customer-statements', customerStatementsRoutes);
 app.use('/api/leads', leadsRoutes);
+app.use('/api/files', filesRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
