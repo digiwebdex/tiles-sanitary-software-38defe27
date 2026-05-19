@@ -6,6 +6,8 @@ export const salesReturnSchema = z.object({
   qty: z.coerce.number().min(0.01, "Quantity must be > 0"),
   /** Phase T4a — canonical SQFT for tile (stock_base_unit='sqft') items. */
   qty_sqft: z.coerce.number().min(0).optional(),
+  /** Phase T4b — pricing context for SQFT cutover. */
+  rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
   reason: z.string().trim().max(300).optional().or(z.literal("")),
   is_broken: z.boolean().default(false),
   refund_amount: z.coerce.number().min(0, "Refund must be ≥ 0"),

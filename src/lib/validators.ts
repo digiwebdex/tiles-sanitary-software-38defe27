@@ -49,6 +49,8 @@ export const createPurchaseServiceSchema = z.object({
   items: z.array(z.object({
     product_id: uuidSchema,
     quantity: z.number().positive("Quantity must be > 0"),
+    qty_sqft: z.number().min(0).optional(),
+    rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
     purchase_rate: z.number().min(0, "Purchase rate cannot be negative"),
     offer_price: z.number().min(0, "Offer price cannot be negative"),
     transport_cost: z.number().min(0, "Transport cost cannot be negative"),
@@ -76,6 +78,8 @@ export const createSaleServiceSchema = z.object({
   items: z.array(z.object({
     product_id: uuidSchema,
     quantity: z.number().positive("Quantity must be > 0"),
+    qty_sqft: z.number().min(0).optional(),
+    rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
     sale_rate: z.number().min(0, "Sale rate cannot be negative"),
   })).min(1, "At least one item required"),
 });
@@ -86,6 +90,8 @@ export const createSalesReturnServiceSchema = z.object({
   sale_id: uuidSchema,
   product_id: uuidSchema,
   qty: z.number().positive("Quantity must be > 0"),
+  qty_sqft: z.number().min(0).optional(),
+  rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
   reason: optionalSafeText(300),
   is_broken: z.boolean(),
   refund_amount: z.number().min(0, "Refund amount cannot be negative"),

@@ -115,7 +115,21 @@ const SalesReturnForm = ({ dealerId, onSubmit, isLoading }: SalesReturnFormProps
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form
+        onSubmit={form.handleSubmit(async (values) => {
+          // Phase T4b: enrich tile-SQFT product with qty_sqft + rate_unit.
+          const prod: any = selectedItem?.products ?? {};
+          if (prod?.stock_base_unit === "sqft") {
+            const perBoxSft = Number(prod.per_box_sft) || (Number(prod.sqft_per_piece) * Math.max(1, Number(prod.pieces_per_box) || 1));
+            if (perBoxSft > 0) {
+              (values as any).qty_sqft = +((Number(values.qty) || 0) * perBoxSft).toFixed(4);
+              (values as any).rate_unit = "per_sqft";
+            }
+          }
+          await onSubmit(values);
+        })}
+        className="space-y-5"
+      >
         {/* Top fields */}
         <Card>
           <CardContent className="pt-5">

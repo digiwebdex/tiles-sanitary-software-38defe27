@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, Search, Package, AlertTriangle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { enrichItemsWithSqft } from "@/lib/tileSqftEnrich";
 import { ceilBoxesFromSft } from "@/lib/tileRounding";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -118,6 +119,8 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
         per_box_sft: number | null;
         pieces_per_box: number | null;
         category: string;
+        stock_base_unit?: string | null;
+        sqft_per_piece?: number | null;
       }>;
     },
     enabled: !!dealerId,
@@ -228,7 +231,15 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form
+        onSubmit={form.handleSubmit(async (values) => {
+          // Phase T4b: for tile products on SQFT base, attach qty_sqft + rate_unit per line.
+          const map = new Map(products.map((p) => [p.id, p]));
+          const enriched = enrichItemsWithSqft(values.items as any[], map as any, { defaultRateUnit: "per_sqft" });
+          await onSubmit({ ...values, items: enriched } as PurchaseFormValues);
+        })}
+        className="space-y-5"
+      >
         {/* Top section: Reference, Date */}
         <Card>
           <CardContent className="pt-5">
