@@ -50,6 +50,7 @@ import {
 } from "@/services/approvalService";
 import { ApprovalRequestDialog } from "@/components/approval/ApprovalRequestDialog";
 import SaleCommissionSection, { type SaleCommissionDraft } from "@/components/sale/SaleCommissionSection";
+import { enrichItemsWithSqft } from "@/lib/tileSqftEnrich";
 
 interface StockShortageItem {
   product_name: string;
