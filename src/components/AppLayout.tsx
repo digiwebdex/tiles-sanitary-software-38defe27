@@ -51,6 +51,8 @@ const navItems = [
   { path: "/reports", label: "Reports", icon: BarChart3, readonlyAllowed: true },
   { path: "/reports/credit", label: "Credit Report", icon: ShieldCheck, readonlyAllowed: true },
   { path: "/whatsapp-logs", label: "WhatsApp Log", icon: MessageCircle },
+  { path: "/sms/single", label: "Send SMS", icon: MessageCircle },
+  { path: "/files", label: "File Manager", icon: Folder, dealerAdminOnly: true },
   { path: "/admin/portal-users", label: "Portal Users", icon: UserCog, dealerAdminOnly: true },
   { path: "/admin/portal-requests", label: "Portal Requests", icon: Inbox, dealerAdminOnly: true },
   { path: "/user-guide", label: "User Guide", icon: HelpCircle, readonlyAllowed: true },
