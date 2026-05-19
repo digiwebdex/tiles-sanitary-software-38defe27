@@ -73,6 +73,8 @@ import AutoPoDraftPage from "./pages/purchases/AutoPoDraftPage";
 import CustomerStatementPage from "./pages/customers/CustomerStatementPage";
 import CustomerStatementsBulkPage from "./pages/customers/CustomerStatementsBulkPage";
 import LeadsPage from "./pages/leads/LeadsPage";
+import SingleSmsPage from "./pages/sms/SingleSmsPage";
+import FileManagerPage from "./pages/files/FileManagerPage";
 
 // Super Admin
 import SuperAdminLayout from "./pages/super-admin/SuperAdminLayout";
@@ -218,6 +220,8 @@ const App = () => (
             <Route path="/customers/new" element={<ProtectedRoute><AppLayout><CreateCustomer /></AppLayout></ProtectedRoute>} />
             <Route path="/customers/:id/edit" element={<ProtectedRoute><AppLayout><EditCustomer /></AppLayout></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><AppLayout><LeadsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/sms/single" element={<ProtectedRoute><AppLayout><SingleSmsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/files" element={<ProtectedRoute><AppLayout><FileManagerPage /></AppLayout></ProtectedRoute>} />
             <Route path="/sales" element={<ProtectedRoute><AppLayout><SalesPage /></AppLayout></ProtectedRoute>} />
             <Route path="/sales/new" element={<ProtectedRoute><AppLayout><CreateSale /></AppLayout></ProtectedRoute>} />
             <Route path="/sales/:id/invoice" element={<ProtectedRoute><AppLayout><InvoicePage /></AppLayout></ProtectedRoute>} />
