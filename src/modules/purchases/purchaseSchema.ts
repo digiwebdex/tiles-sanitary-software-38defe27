@@ -3,7 +3,13 @@ import { z } from "zod";
 export const purchaseItemSchema = z.object({
   product_id: z.string().min(1, "Product is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be > 0"),
+  /** Phase T4a — tile SQFT mode. When the product has stock_base_unit='sqft' (T5),
+   *  this carries the canonical SQFT quantity; `quantity` is still populated (in pieces)
+   *  for legacy compatibility. NULL = piece-mode item (sanitary / non-tile). */
+  qty_sqft: z.coerce.number().min(0).optional(),
   purchase_rate: z.coerce.number().min(0, "Rate must be ≥ 0"),
+  /** 'per_piece' | 'per_box' | 'per_sqft'. NULL → legacy per_piece. */
+  rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
   offer_price: z.coerce.number().min(0).default(0),
   transport_cost: z.coerce.number().min(0).default(0),
   labor_cost: z.coerce.number().min(0).default(0),
