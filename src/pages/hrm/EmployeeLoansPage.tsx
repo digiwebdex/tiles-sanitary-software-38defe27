@@ -81,7 +81,7 @@ export default function EmployeeLoansPage() {
           status: statusFilter === "all" ? undefined : (statusFilter as any),
         }),
         employees.length ? Promise.resolve(employees) : employeeService.list(dealerId),
-        banks.length ? Promise.resolve(banks) : bankAccountService.list().catch(() => []),
+        banks.length ? Promise.resolve(banks) : bankAccountService.list(dealerId).catch(() => []),
       ]);
       setSummary(s);
       setRows(list);
@@ -296,7 +296,7 @@ export default function EmployeeLoansPage() {
                 <Select value={newForm.bank_account_id} onValueChange={(v) => setNewForm({ ...newForm, bank_account_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
-                    {banks.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                    {banks.map(b => <SelectItem key={b.id} value={b.id}>{b.bank_name} — {b.account_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

@@ -133,7 +133,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     .leftJoin('bank_accounts as b', 'b.id', 'l.bank_account_id')
     .where('l.id', req.params.id)
     .andWhere('l.dealer_id', dealerId)
-    .select('l.*', 'e.name as employee_name', 'e.employee_code', 'b.name as bank_account_name')
+    .select('l.*', 'e.name as employee_name', 'e.employee_code', db.raw("COALESCE(b.bank_name || ' — ' || b.account_name, NULL) as bank_account_name"))
     .first();
   if (!loan) return res.status(404).json({ error: 'Loan not found' });
   const emis = await db('employee_loan_emis')
