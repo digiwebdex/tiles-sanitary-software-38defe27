@@ -1354,6 +1354,50 @@ export type Database = {
           },
         ]
       }
+      lead_options: {
+        Row: {
+          color: string | null
+          created_at: string
+          dealer_id: string
+          id: string
+          is_active: boolean
+          kind: string
+          label: string
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          dealer_id: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          label: string
+          sort_order?: number
+          value: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          dealer_id?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          sort_order?: number
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_options_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "dealers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_attempts: {
         Row: {
           attempted_at: string
