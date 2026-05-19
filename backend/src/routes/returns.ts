@@ -453,6 +453,7 @@ router.post('/sales', async (req: Request, res: Response) => {
           sale_id: input.sale_id,
           product_id: input.product_id,
           qty: input.qty,
+          qty_sqft: input.qty_sqft ?? null,
           reason: input.reason || null,
           is_broken: input.is_broken,
           refund_amount: input.refund_amount,
