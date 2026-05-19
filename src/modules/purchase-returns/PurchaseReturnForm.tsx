@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { enrichItemsWithSqft } from "@/lib/tileSqftEnrich";
 
 interface PurchaseReturnFormProps {
   dealerId: string;
