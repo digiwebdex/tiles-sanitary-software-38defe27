@@ -41,6 +41,16 @@ const HRMPage = () => {
   const [payBank, setPayBank] = useState<string>("");
   const [filterPeriod, setFilterPeriod] = useState("");
 
+  // Attendance
+  const today = new Date().toISOString().slice(0, 10);
+  const [attDate, setAttDate] = useState(today);
+  const [bulkStatus, setBulkStatus] = useState<Record<string, string>>({});
+  const [attPeriod, setAttPeriod] = useState(new Date().toISOString().slice(0, 7));
+
+  // Advances
+  const [advFor, setAdvFor] = useState<Employee | null>(null);
+  const [advForm, setAdvForm] = useState({ amount: 0, payment_method: "cash" as "cash" | "bank", bank_account_id: "", notes: "" });
+
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["employees", dealerId],
     queryFn: () => employeeService.list(dealerId), enabled: !!dealerId,
