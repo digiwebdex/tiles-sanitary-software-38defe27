@@ -69,6 +69,95 @@ function resolveDealerScope(req: Request, res: Response): string | null {
 
 router.use(authenticate, tenantGuard);
 
+// ── Lead options (per-dealer configurable lookups) ───────────────────────
+const optionSchema = z.object({
+  kind: z.enum(['source', 'status', 'visit_type', 'outcome']),
+  value: z.string().trim().min(1).max(50),
+  label: z.string().trim().min(1).max(100),
+  color: z.string().trim().max(20).nullable().optional(),
+  sort_order: z.coerce.number().int().optional(),
+  is_active: z.boolean().optional(),
+});
+
+router.get('/options/all', async (req, res) => {
+  try {
+    const dealerId = resolveDealerScope(req, res);
+    if (!dealerId) return;
+    const kind = req.query.kind as string | undefined;
+    let q = db('lead_options').where({ dealer_id: dealerId });
+    if (kind) q = q.andWhere({ kind });
+    const rows = await q.orderBy('kind').orderBy('sort_order').orderBy('label');
+    res.json({ rows });
+  } catch (err: any) {
+    console.error('[leads/options/list]', err.message);
+    res.status(500).json({ error: 'Failed to list options' });
+  }
+});
+
+router.post('/options', async (req, res) => {
+  try {
+    const dealerId = resolveDealerScope(req, res);
+    if (!dealerId) return;
+    const parsed = optionSchema.safeParse(req.body?.data);
+    if (!parsed.success) { res.status(400).json({ error: 'Invalid payload', issues: parsed.error.flatten() }); return; }
+    const [row] = await db('lead_options')
+      .insert({ dealer_id: dealerId, ...parsed.data })
+      .onConflict(['dealer_id', 'kind', 'value'])
+      .merge(['label', 'color', 'sort_order', 'is_active'])
+      .returning('*');
+    res.status(201).json({ row });
+  } catch (err: any) {
+    console.error('[leads/options/create]', err.message);
+    res.status(500).json({ error: 'Failed to save option' });
+  }
+});
+
+router.delete('/options/:id', async (req, res) => {
+  try {
+    const dealerId = resolveDealerScope(req, res);
+    if (!dealerId) return;
+    const n = await db('lead_options').where({ id: req.params.id, dealer_id: dealerId }).delete();
+    if (!n) { res.status(404).json({ error: 'Option not found' }); return; }
+    res.status(204).end();
+  } catch (err: any) {
+    console.error('[leads/options/delete]', err.message);
+    res.status(500).json({ error: 'Failed to delete option' });
+  }
+});
+
+// ── Visits register (cross-lead) ─────────────────────────────────────────
+router.get('/visits/register', async (req, res) => {
+  try {
+    const dealerId = resolveDealerScope(req, res);
+    if (!dealerId) return;
+    const from = (req.query.from as string) || null;
+    const to = (req.query.to as string) || null;
+    const visitType = (req.query.visit_type as string) || null;
+
+    let q = db('lead_visits as lv')
+      .leftJoin('leads as l', 'l.id', 'lv.lead_id')
+      .where('lv.dealer_id', dealerId)
+      .select(
+        'lv.*',
+        'l.name as lead_name',
+        'l.phone as lead_phone',
+        'l.company as lead_company',
+        'l.status as lead_status',
+      );
+    if (from) q = q.andWhere('lv.visit_date', '>=', from);
+    if (to) q = q.andWhere('lv.visit_date', '<=', to);
+    if (visitType) q = q.andWhere('lv.visit_type', visitType);
+
+    const rows = await q.orderBy('lv.visit_date', 'desc').orderBy('lv.created_at', 'desc').limit(500);
+    res.json({ rows });
+  } catch (err: any) {
+    console.error('[leads/visits/register]', err.message);
+    res.status(500).json({ error: 'Failed to load visit register' });
+  }
+});
+
+
+
 // ── List leads ────────────────────────────────────────────────────────────
 router.get('/', async (req: Request, res: Response) => {
   try {

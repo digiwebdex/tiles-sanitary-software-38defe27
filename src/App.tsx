@@ -76,6 +76,8 @@ import AutoPoDraftPage from "./pages/purchases/AutoPoDraftPage";
 import CustomerStatementPage from "./pages/customers/CustomerStatementPage";
 import CustomerStatementsBulkPage from "./pages/customers/CustomerStatementsBulkPage";
 import LeadsPage from "./pages/leads/LeadsPage";
+import LeadVisitRegisterPage from "./pages/leads/LeadVisitRegisterPage";
+import LeadOptionsPage from "./pages/leads/LeadOptionsPage";
 import SingleSmsPage from "./pages/sms/SingleSmsPage";
 import FileManagerPage from "./pages/files/FileManagerPage";
 import HolidaysPage from "./pages/holidays/HolidaysPage";
@@ -227,6 +229,8 @@ const App = () => (
             <Route path="/customers/new" element={<ProtectedRoute><AppLayout><CreateCustomer /></AppLayout></ProtectedRoute>} />
             <Route path="/customers/:id/edit" element={<ProtectedRoute><AppLayout><EditCustomer /></AppLayout></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><AppLayout><LeadsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/leads/visits" element={<ProtectedRoute><AppLayout><LeadVisitRegisterPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/leads/options" element={<ProtectedRoute><AppLayout><LeadOptionsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/sms/single" element={<ProtectedRoute><AppLayout><SingleSmsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/files" element={<ProtectedRoute><AppLayout><FileManagerPage /></AppLayout></ProtectedRoute>} />
             <Route path="/holidays" element={<ProtectedRoute><AppLayout><HolidaysPage /></AppLayout></ProtectedRoute>} />

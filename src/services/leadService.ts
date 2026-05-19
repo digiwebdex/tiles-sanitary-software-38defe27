@@ -144,4 +144,48 @@ export const leadService = {
   async removeVisit(visitId: string) {
     await vpsRequest(`/api/leads/visits/${visitId}`, { method: "DELETE" });
   },
+
+  async visitRegister(dealerId: string, opts: { from?: string; to?: string; visit_type?: string } = {}) {
+    const params = new URLSearchParams({ dealerId });
+    if (opts.from) params.set("from", opts.from);
+    if (opts.to) params.set("to", opts.to);
+    if (opts.visit_type) params.set("visit_type", opts.visit_type);
+    const body = await vpsRequest<{ rows: (LeadVisit & { lead_name: string; lead_phone: string | null; lead_company: string | null; lead_status: LeadStatus })[] }>(
+      `/api/leads/visits/register?${params}`,
+    );
+    return body.rows ?? [];
+  },
+};
+
+export type LeadOptionKind = "source" | "status" | "visit_type" | "outcome";
+
+export interface LeadOption {
+  id: string;
+  dealer_id: string;
+  kind: LeadOptionKind;
+  value: string;
+  label: string;
+  color: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export const leadOptionService = {
+  async list(dealerId: string, kind?: LeadOptionKind) {
+    const params = new URLSearchParams({ dealerId });
+    if (kind) params.set("kind", kind);
+    const body = await vpsRequest<{ rows: LeadOption[] }>(`/api/leads/options/all?${params}`);
+    return body.rows ?? [];
+  },
+  async upsert(dealerId: string, data: Omit<LeadOption, "id" | "dealer_id" | "created_at">) {
+    const body = await vpsRequest<{ row: LeadOption }>(`/api/leads/options`, {
+      method: "POST",
+      body: JSON.stringify({ dealerId, data }),
+    });
+    return body.row;
+  },
+  async remove(id: string) {
+    await vpsRequest(`/api/leads/options/${id}`, { method: "DELETE" });
+  },
 };
