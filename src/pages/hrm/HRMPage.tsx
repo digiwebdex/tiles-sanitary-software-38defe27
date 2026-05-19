@@ -15,6 +15,8 @@ import { bankAccountService } from "@/services/bankAccountService";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { FileText } from "lucide-react";
 
 const emptyEmp = {
   employee_code: "", name: "", designation: "", department: "",
@@ -330,7 +332,7 @@ const HRMPage = () => {
                   <TableHead>Period</TableHead><TableHead>Employee</TableHead><TableHead>Designation</TableHead>
                   <TableHead className="text-right">Basic</TableHead><TableHead className="text-right">Allowances</TableHead>
                   <TableHead className="text-right">Deduction</TableHead><TableHead className="text-right">Net</TableHead>
-                  <TableHead>Method</TableHead><TableHead>Date</TableHead>
+                  <TableHead>Method</TableHead><TableHead>Date</TableHead><TableHead></TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {payments.map(p => (
@@ -344,9 +346,14 @@ const HRMPage = () => {
                       <TableCell className="text-right font-mono font-semibold">{formatCurrency(Number(p.net_payable))}</TableCell>
                       <TableCell><Badge variant="outline">{p.payment_method}</Badge></TableCell>
                       <TableCell className="text-xs">{new Date(p.payment_date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link to={`/hrm/payslip/${p.id}`}><FileText className="h-4 w-4" /></Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
-                  {!payments.length && <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">No salary payments.</TableCell></TableRow>}
+                  {!payments.length && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No salary payments.</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </CardContent>

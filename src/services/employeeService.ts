@@ -82,7 +82,9 @@ export const employeeService = {
     if (period) qs.set("period", period);
     return vpsAuthedFetch(`/api/employees/salary-payments?${qs}`).then(j) as Promise<SalaryPayment[]>;
   },
-  payRoll: (id: string, dealerId: string, data: Partial<SalaryPayment>) =>
+  paymentById: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/employees/salary-payments/${id}?dealerId=${dealerId}`).then(j) as Promise<any>,
+  payRoll: (id: string, dealerId: string, data: Partial<SalaryPayment> & { apply_components?: boolean }) =>
     vpsAuthedFetch(`/api/employees/${id}/salary-payments?dealerId=${dealerId}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
     }).then(j) as Promise<SalaryPayment>,
