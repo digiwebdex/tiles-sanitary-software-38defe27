@@ -199,4 +199,50 @@ router.post('/deduct', (req, res) => applyChange('deduct', req, res));
 router.post('/restore', (req, res) => applyChange('restore', req, res));
 router.post('/broken', (req, res) => applyChange('broken', req, res));
 
+/**
+ * GET /api/adjustments/broken
+ * List recent damage / broken stock entries for the dealer.
+ * Joins audit_logs (action='stock_broken') -> stock -> products to surface
+ * product name + reason + qty delta.
+ */
+router.get('/broken', async (req, res) => {
+  const dealerId = resolveDealer(req, res);
+  if (!dealerId) return;
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
+  const from = req.query.from ? String(req.query.from) : null;
+  const to = req.query.to ? String(req.query.to) : null;
+
+  try {
+    let q = db('audit_logs as a')
+      .join('stock as s', 's.id', 'a.record_id')
+      .join('products as p', 'p.id', 's.product_id')
+      .where('a.dealer_id', dealerId)
+      .where('a.action', 'stock_broken')
+      .select(
+        'a.id',
+        'a.created_at',
+        'a.user_id',
+        db.raw(`a.new_data->>'reason' as reason`),
+        db.raw(`(a.new_data->>'total_pieces_delta')::numeric as total_pieces_delta`),
+        db.raw(`(a.new_data->>'box_qty_delta')::numeric as box_qty_delta`),
+        db.raw(`(a.new_data->>'piece_qty_delta')::numeric as piece_qty_delta`),
+        'p.id as product_id',
+        'p.name as product_name',
+        'p.sku',
+        'p.unit_type',
+        'p.pieces_per_box',
+        'p.per_box_sft',
+      )
+      .orderBy('a.created_at', 'desc')
+      .limit(limit);
+    if (from) q = q.where('a.created_at', '>=', from);
+    if (to) q = q.where('a.created_at', '<=', to);
+    const rows = await q;
+    res.json({ rows });
+  } catch (err: any) {
+    console.error('[adjustments/broken/list]', err.message);
+    res.status(500).json({ error: err.message || 'Failed to list damage entries' });
+  }
+});
+
 export default router;
