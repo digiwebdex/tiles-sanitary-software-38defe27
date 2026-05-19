@@ -223,6 +223,7 @@ const App = () => (
             <Route path="/hrm/salary-structure" element={<ProtectedRoute><AppLayout><SalaryStructurePage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm/documents" element={<ProtectedRoute><AppLayout><EmployeeDocumentsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm/shifts" element={<ProtectedRoute><AppLayout><ShiftsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/hrm/performance" element={<ProtectedRoute><AppLayout><PerformanceReviewsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm/payslip/:id" element={<ProtectedRoute><AppLayout><PayslipPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/warehouses" element={<ProtectedRoute><AppLayout><WarehousesPage /></AppLayout></ProtectedRoute>} />
