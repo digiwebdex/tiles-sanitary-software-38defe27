@@ -32,6 +32,17 @@ export async function up(knex: Knex): Promise<void> {
     CREATE INDEX IF NOT EXISTS holidays_dealer_date_idx ON public.holidays(dealer_id, holiday_date);
 
     DROP TRIGGER IF EXISTS trg_holidays_updated_at ON public.holidays;
+  `);
+
+  await knex.raw(`
+    CREATE OR REPLACE FUNCTION public.tg_set_updated_at()
+    RETURNS trigger AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
     CREATE TRIGGER trg_holidays_updated_at
       BEFORE UPDATE ON public.holidays
       FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at();
