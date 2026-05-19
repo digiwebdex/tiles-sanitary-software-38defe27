@@ -90,6 +90,8 @@ export const createSalesReturnServiceSchema = z.object({
   sale_id: uuidSchema,
   product_id: uuidSchema,
   qty: z.number().positive("Quantity must be > 0"),
+  qty_sqft: z.number().min(0).optional(),
+  rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
   reason: optionalSafeText(300),
   is_broken: z.boolean(),
   refund_amount: z.number().min(0, "Refund amount cannot be negative"),
