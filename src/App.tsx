@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import ProductsPage from "./pages/products/ProductsPage";
 import CreateProductRoute from "./pages/products/CreateProductRoute";
 import EditProduct from "./pages/products/EditProduct";
+import DamagePage from "./pages/damage/DamagePage";
 import PurchasesPage from "./pages/purchases/PurchasesPage";
 import CreatePurchase from "./pages/purchases/CreatePurchase";
 import ViewPurchase from "./pages/purchases/ViewPurchase";
