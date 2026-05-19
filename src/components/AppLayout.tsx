@@ -26,6 +26,8 @@ const navItems = [
   { path: "/purchases/auto-draft", label: "Auto-PO Drafts", icon: Sparkles, dealerAdminOnly: true },
   { path: "/customers", label: "Customers", icon: Users },
   { path: "/leads", label: "Leads", icon: HandCoins },
+  { path: "/leads/visits", label: "Visit Register", icon: HandCoins },
+  { path: "/leads/options", label: "Lead Options", icon: HandCoins, dealerAdminOnly: true },
   { path: "/customers/statements", label: "Customer Statements", icon: FileText, dealerAdminOnly: true },
   { path: "/projects", label: "Projects", icon: Folder },
   { path: "/quotations", label: "Quotations", icon: FileSignature },
