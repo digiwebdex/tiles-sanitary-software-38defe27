@@ -262,25 +262,52 @@ const HRMPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5 text-primary" />Daily Attendance</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Label className="text-xs">Date</Label>
                 <Input type="date" value={attDate} onChange={e => setAttDate(e.target.value)} className="w-40" />
+                <Label className="text-xs ml-2 flex items-center gap-1"><Clock className="h-3 w-3" />Default Check-in</Label>
+                <Input type="time" value={bulkCheckIn} onChange={e => setBulkCheckIn(e.target.value)} className="w-28" />
+                <Button size="sm" variant="outline" onClick={autoEvalAll}><Wand2 className="h-3 w-3 mr-1" />Auto-fill All</Button>
                 <Button size="sm" onClick={() => saveBulk.mutate()} disabled={saveBulk.isPending}>Save Marks</Button>
               </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>Employee</TableHead><TableHead>Designation</TableHead>
-                  <TableHead>Today's Mark</TableHead><TableHead>Status (saved)</TableHead>
+                  <TableHead>Employee</TableHead><TableHead>Shift</TableHead>
+                  <TableHead>Check-in</TableHead><TableHead>Today's Mark</TableHead>
+                  <TableHead>Status (saved)</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {employees.filter(e => e.status === "active").map(e => {
                     const saved = attRows.find((r: any) => r.employee_id === e.id);
+                    const shift = e.shift_id ? shiftMap[e.shift_id] : null;
                     return (
                       <TableRow key={e.id}>
-                        <TableCell className="font-medium">{e.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{e.designation || "—"}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">{e.name}</div>
+                          <div className="text-xs text-muted-foreground">{e.designation || "—"}</div>
+                        </TableCell>
+                        <TableCell>
+                          {shift ? (
+                            <Badge variant="outline" className="text-xs">{shift.name} · {shift.start_time}</Badge>
+                          ) : <span className="text-muted-foreground text-xs">— none —</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="time"
+                              value={checkIns[e.id] ?? ""}
+                              placeholder={bulkCheckIn}
+                              onChange={(ev) => setCheckIns({ ...checkIns, [e.id]: ev.target.value })}
+                              className="w-24 h-8 text-xs"
+                              disabled={!e.shift_id}
+                            />
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => autoEvalOne(e)} disabled={!e.shift_id} title="Auto-evaluate based on shift">
+                              <Wand2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Select value={bulkStatus[e.id] ?? saved?.status ?? ""} onValueChange={(v) => setBulkStatus({ ...bulkStatus, [e.id]: v })}>
                             <SelectTrigger className="w-36"><SelectValue placeholder="—" /></SelectTrigger>
