@@ -58,6 +58,8 @@ export const salesReturnService = {
         sale_id: input.sale_id,
         product_id: input.product_id,
         qty: input.qty,
+        qty_sqft: input.qty_sqft,
+        rate_unit: input.rate_unit,
         reason: input.reason ?? null,
         is_broken: input.is_broken,
         refund_amount: input.refund_amount,
