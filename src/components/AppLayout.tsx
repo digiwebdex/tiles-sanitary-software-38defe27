@@ -47,6 +47,7 @@ const navItems = [
   { path: "/emi", label: "EMI Plans", icon: CalendarClock, dealerAdminOnly: true },
   { path: "/hrm", label: "HRM (Employees)", icon: Users, dealerAdminOnly: true },
   { path: "/hrm/leaves", label: "Leave Management", icon: CalendarDays, dealerAdminOnly: true },
+  { path: "/hrm/salary-structure", label: "Salary Structure", icon: Wallet, dealerAdminOnly: true },
   { path: "/holidays", label: "Holidays", icon: CalendarDays, dealerAdminOnly: true },
   { path: "/directors", label: "Directors", icon: Crown, dealerAdminOnly: true },
   { path: "/warehouses", label: "Warehouses", icon: Warehouse, dealerAdminOnly: true },
