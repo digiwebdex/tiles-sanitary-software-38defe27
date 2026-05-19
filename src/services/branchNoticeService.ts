@@ -1,4 +1,4 @@
-import { api } from '@/lib/data/vpsAdapter';
+import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 
 export interface Branch {
   id: string;
@@ -21,8 +21,8 @@ export interface Notice {
   dealer_id: string;
   title: string;
   body: string;
-  severity: 'info' | 'warning' | 'critical';
-  audience: 'all' | 'admin' | 'manager' | 'accountant' | 'salesman';
+  severity: "info" | "warning" | "critical";
+  audience: "all" | "admin" | "manager" | "accountant" | "salesman";
   start_date?: string | null;
   end_date?: string | null;
   is_active: boolean;
@@ -31,17 +31,32 @@ export interface Notice {
   updated_at: string;
 }
 
+async function j<T>(url: string, init?: RequestInit): Promise<T> {
+  const r = await vpsAuthedFetch(url, init);
+  if (!r.ok) {
+    const t = await r.text().catch(() => "");
+    throw new Error(t || `Request failed (${r.status})`);
+  }
+  return r.json() as Promise<T>;
+}
+
+const jsonInit = (method: string, body: unknown): RequestInit => ({
+  method,
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+});
+
 export const branchService = {
-  list: () => api.get<Branch[]>('/api/branches'),
-  create: (data: Partial<Branch>) => api.post<Branch>('/api/branches', data),
-  update: (id: string, data: Partial<Branch>) => api.put<Branch>(`/api/branches/${id}`, data),
-  remove: (id: string) => api.delete(`/api/branches/${id}`),
+  list: () => j<Branch[]>(`/api/branches`),
+  create: (data: Partial<Branch>) => j<Branch>(`/api/branches`, jsonInit("POST", data)),
+  update: (id: string, data: Partial<Branch>) => j<Branch>(`/api/branches/${id}`, jsonInit("PUT", data)),
+  remove: (id: string) => j<{ success: true }>(`/api/branches/${id}`, { method: "DELETE" }),
 };
 
 export const noticeService = {
-  list: () => api.get<Notice[]>('/api/notices'),
-  listActive: () => api.get<Notice[]>('/api/notices/active'),
-  create: (data: Partial<Notice>) => api.post<Notice>('/api/notices', data),
-  update: (id: string, data: Partial<Notice>) => api.put<Notice>(`/api/notices/${id}`, data),
-  remove: (id: string) => api.delete(`/api/notices/${id}`),
+  list: () => j<Notice[]>(`/api/notices`),
+  listActive: () => j<Notice[]>(`/api/notices/active`),
+  create: (data: Partial<Notice>) => j<Notice>(`/api/notices`, jsonInit("POST", data)),
+  update: (id: string, data: Partial<Notice>) => j<Notice>(`/api/notices/${id}`, jsonInit("PUT", data)),
+  remove: (id: string) => j<{ success: true }>(`/api/notices/${id}`, { method: "DELETE" }),
 };
