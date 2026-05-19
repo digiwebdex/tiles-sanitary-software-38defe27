@@ -392,6 +392,8 @@ const salesReturnSchema = z.object({
   sale_id: z.string().uuid(),
   product_id: z.string().uuid(),
   qty: z.coerce.number().positive(),
+  /** Phase T4a — canonical SQFT for tile (stock_base_unit='sqft' in T5) items. */
+  qty_sqft: z.coerce.number().min(0).optional().nullable(),
   reason: z.string().nullable().optional(),
   is_broken: z.boolean(),
   refund_amount: z.coerce.number().nonnegative(),
