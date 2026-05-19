@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema, type ProductFormValues } from "@/modules/products/productSchema";
+import { computeSqftPerPiece, computeSqftPerBox } from "@/lib/tileUnits";
 import { useQuery } from "@tanstack/react-query";
 import { vpsAuthedFetch } from "@/lib/vpsAuthClient";
 import {
@@ -87,6 +88,12 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
       unit_type: "box_sft",
       per_box_sft: null,
       pieces_per_box: 1,
+      tile_width: null,
+      tile_height: null,
+      size_unit: "inch",
+      sqft_per_piece: null,
+      sqft_per_box: null,
+      stock_base_unit: "piece",
       cost_price: 0,
       default_sale_rate: 0,
       reorder_level: 0,
