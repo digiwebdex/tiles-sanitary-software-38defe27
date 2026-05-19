@@ -129,6 +129,29 @@ router.get('/transfers', async (req, res) => {
   res.json(rows);
 });
 
+/** Internal helper: post transport_cost as cash/bank outflow */
+async function postTransportCost(trx: any, dealerId: string, userId: string | null, row: any) {
+  const cost = Number(row.transport_cost) || 0;
+  if (cost <= 0) return;
+  const desc = `Warehouse transfer ${row.transfer_no ?? row.id} transport`;
+  if (row.payment_method === 'bank') {
+    if (!row.bank_account_id) throw new Error('bank_account_id required for bank payment');
+    await trx('bank_ledger').insert({
+      dealer_id: dealerId, bank_account_id: row.bank_account_id,
+      type: 'expense', amount: -cost, description: desc,
+      reference_type: 'warehouse_transfer', reference_id: row.id,
+      entry_date: row.transfer_date, created_by: userId,
+    });
+  } else {
+    await trx('cash_ledger').insert({
+      dealer_id: dealerId, type: 'expense', amount: -cost, description: desc,
+      reference_type: 'warehouse_transfer', reference_id: row.id,
+      entry_date: row.transfer_date, created_by: userId,
+    });
+  }
+}
+
+/** Immediate transfer — back-compat: creates row already in 'received' status and posts cost. */
 router.post('/transfers', async (req, res) => {
   const dealerId = resolveDealer(req, res); if (!dealerId) return;
   if (!requireAdmin(req, res)) return;
@@ -137,6 +160,7 @@ router.post('/transfers', async (req, res) => {
 
   const trx = await db.transaction();
   try {
+    const userId = req.user?.userId ?? null;
     const [row] = await trx('warehouse_transfers').insert({
       dealer_id: dealerId,
       transfer_no: p.data.transfer_no ?? null,
@@ -145,36 +169,96 @@ router.post('/transfers', async (req, res) => {
       product_id: p.data.product_id ?? null,
       product_name_snapshot: p.data.product_name_snapshot ?? null,
       quantity: p.data.quantity,
+      qty_sqft: p.data.qty_sqft,
       unit: p.data.unit,
       transport_cost: p.data.transport_cost,
       payment_method: p.data.payment_method,
       bank_account_id: p.data.payment_method === 'bank' ? (p.data.bank_account_id ?? null) : null,
       transfer_date: p.data.transfer_date ?? trx.fn.now(),
       notes: p.data.notes ?? null,
-      created_by: req.user?.userId ?? null,
+      status: 'received',
+      requested_by: userId, requested_at: trx.fn.now(),
+      approved_by: userId, approved_at: trx.fn.now(),
+      received_by: userId, received_at: trx.fn.now(),
+      created_by: userId,
     }).returning('*');
-
-    // Post transport cost as cash/bank outflow
-    if (p.data.transport_cost > 0) {
-      const desc = `Warehouse transfer ${row.transfer_no ?? ''} transport`;
-      if (p.data.payment_method === 'bank') {
-        if (!p.data.bank_account_id) throw new Error('bank_account_id required');
-        await trx('bank_ledger').insert({
-          dealer_id: dealerId, bank_account_id: p.data.bank_account_id,
-          type: 'expense', amount: -p.data.transport_cost, description: desc,
-          reference_type: 'warehouse_transfer', reference_id: row.id,
-          entry_date: row.transfer_date, created_by: req.user?.userId ?? null,
-        });
-      } else {
-        await trx('cash_ledger').insert({
-          dealer_id: dealerId, type: 'expense', amount: -p.data.transport_cost, description: desc,
-          reference_type: 'warehouse_transfer', reference_id: row.id,
-          entry_date: row.transfer_date, created_by: req.user?.userId ?? null,
-        });
-      }
-    }
+    await postTransportCost(trx, dealerId, userId, row);
     await trx.commit();
     res.status(201).json(row);
+  } catch (e: any) {
+    await trx.rollback();
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** Request a transfer (no stock/cost yet). */
+router.post('/transfers/request', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  const p = TransferSchema.safeParse(req.body);
+  if (!p.success) { res.status(400).json({ error: p.error.flatten() }); return; }
+  const userId = req.user?.userId ?? null;
+  const [row] = await db('warehouse_transfers').insert({
+    dealer_id: dealerId,
+    transfer_no: p.data.transfer_no ?? null,
+    from_warehouse_id: p.data.from_warehouse_id ?? null,
+    to_warehouse_id: p.data.to_warehouse_id ?? null,
+    product_id: p.data.product_id ?? null,
+    product_name_snapshot: p.data.product_name_snapshot ?? null,
+    quantity: p.data.quantity,
+    qty_sqft: p.data.qty_sqft,
+    unit: p.data.unit,
+    transport_cost: p.data.transport_cost,
+    payment_method: p.data.payment_method,
+    bank_account_id: p.data.payment_method === 'bank' ? (p.data.bank_account_id ?? null) : null,
+    transfer_date: p.data.transfer_date ?? db.fn.now(),
+    notes: p.data.notes ?? null,
+    status: 'requested',
+    requested_by: userId, requested_at: db.fn.now(),
+    created_by: userId,
+  }).returning('*');
+  res.status(201).json(row);
+});
+
+/** Approve a requested transfer. dealer_admin only. */
+router.post('/transfers/:id/approve', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const [row] = await db('warehouse_transfers')
+    .where({ id: req.params.id, dealer_id: dealerId, status: 'requested' })
+    .update({ status: 'approved', approved_by: req.user?.userId ?? null, approved_at: db.fn.now() })
+    .returning('*');
+  if (!row) { res.status(404).json({ error: 'Not found or not in requested state' }); return; }
+  res.json(row);
+});
+
+/** Reject a requested/approved transfer. */
+router.post('/transfers/:id/reject', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const reason = (req.body?.reason as string | undefined) ?? null;
+  const [row] = await db('warehouse_transfers')
+    .where({ id: req.params.id, dealer_id: dealerId })
+    .whereIn('status', ['requested', 'approved'])
+    .update({ status: 'rejected', reject_reason: reason })
+    .returning('*');
+  if (!row) { res.status(404).json({ error: 'Not found or cannot reject' }); return; }
+  res.json(row);
+});
+
+/** Mark approved transfer as received (posts transport cost). */
+router.post('/transfers/:id/receive', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  const trx = await db.transaction();
+  try {
+    const userId = req.user?.userId ?? null;
+    const [row] = await trx('warehouse_transfers')
+      .where({ id: req.params.id, dealer_id: dealerId, status: 'approved' })
+      .update({ status: 'received', received_by: userId, received_at: trx.fn.now() })
+      .returning('*');
+    if (!row) { await trx.rollback(); res.status(404).json({ error: 'Not found or not approved' }); return; }
+    await postTransportCost(trx, dealerId, userId, row);
+    await trx.commit();
+    res.json(row);
   } catch (e: any) {
     await trx.rollback();
     res.status(500).json({ error: e.message });
