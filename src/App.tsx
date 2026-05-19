@@ -71,6 +71,7 @@ import LeavesPage from "./pages/hrm/LeavesPage";
 import SalaryStructurePage from "./pages/hrm/SalaryStructurePage";
 import EmployeeDocumentsPage from "./pages/hrm/EmployeeDocumentsPage";
 import ShiftsPage from "./pages/hrm/ShiftsPage";
+import PerformanceReviewsPage from "./pages/hrm/PerformanceReviewsPage";
 import PayslipPage from "./pages/hrm/PayslipPage";
 import DirectorsPage from "./pages/directors/DirectorsPage";
 import WarehousesPage from "./pages/warehouses/WarehousesPage";
