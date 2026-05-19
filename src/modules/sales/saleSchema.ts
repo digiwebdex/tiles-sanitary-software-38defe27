@@ -6,7 +6,12 @@ export const saleItemSchema = z.object({
   /** Optional dual-unit fields. When omitted, backend derives from `quantity`. */
   box_qty: z.coerce.number().min(0).optional(),
   piece_qty: z.coerce.number().min(0).optional(),
+  /** Phase T4a — tile SQFT mode. Canonical SQFT qty for products with
+   *  stock_base_unit='sqft' (T5). NULL = piece-mode item. */
+  qty_sqft: z.coerce.number().min(0).optional(),
   sale_rate: z.coerce.number().min(0, "Rate must be ≥ 0"),
+  /** 'per_piece' | 'per_box' | 'per_sqft'. NULL → legacy per_piece. */
+  rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
   rate_source: z.enum(["default", "tier", "manual"]).optional().default("default"),
   tier_id: z.string().nullable().optional(),
   /** Resolved rate (default or tier) before any manual override; null when no override. */
