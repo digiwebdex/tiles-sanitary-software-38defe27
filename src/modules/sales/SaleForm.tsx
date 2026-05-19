@@ -131,7 +131,7 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
 
   // Phase 3U-30b: VPS GET /api/products?f.active=true (active products only).
   const { data: products = [] } = useQuery<
-    Array<{ id: string; name: string; sku: string; unit_type: string; per_box_sft: number | null; pieces_per_box: number | null; default_sale_rate: number | null }>
+    Array<{ id: string; name: string; sku: string; unit_type: string; per_box_sft: number | null; pieces_per_box: number | null; default_sale_rate: number | null; stock_base_unit?: string | null; sqft_per_piece?: number | null }>
   >({
     queryKey: ["products-active", dealerId],
     queryFn: async () => {
@@ -151,6 +151,8 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
         per_box_sft: p.per_box_sft ?? null,
         pieces_per_box: p.pieces_per_box ?? null,
         default_sale_rate: p.default_sale_rate ?? null,
+        stock_base_unit: p.stock_base_unit ?? null,
+        sqft_per_piece: p.sqft_per_piece ?? null,
       }));
     },
     enabled: !!dealerId,
