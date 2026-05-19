@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Check, X, Ban } from "lucide-react";
 import { leaveService, LeaveType, LeaveBalance, LeaveRequest } from "@/services/leaveService";
 import { employeeService } from "@/services/employeeService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-600 border-yellow-500/30",
@@ -22,6 +23,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function LeavesPage() {
+  const { profile } = useAuth();
+  const dealerId = profile?.dealer_id;
   const [tab, setTab] = useState("requests");
   const [types, setTypes] = useState<LeaveType[]>([]);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
@@ -31,15 +34,16 @@ export default function LeavesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   async function reload() {
+    if (!dealerId) return;
     const [t, b, r, e] = await Promise.all([
       leaveService.listTypes(),
       leaveService.listBalances({ year }),
       leaveService.listRequests(statusFilter === "all" ? {} : { status: statusFilter }),
-      employeeService.list(),
+      employeeService.list(dealerId),
     ]);
     setTypes(t); setBalances(b); setRequests(r); setEmployees(e);
   }
-  useEffect(() => { reload().catch((e) => toast({ title: "Load failed", description: String(e.message ?? e), variant: "destructive" })); }, [year, statusFilter]);
+  useEffect(() => { reload().catch((e) => toast({ title: "Load failed", description: String(e.message ?? e), variant: "destructive" })); }, [year, statusFilter, dealerId]);
 
   return (
     <div className="p-4 md:p-6 space-y-4">
