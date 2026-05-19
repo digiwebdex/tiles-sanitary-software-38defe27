@@ -74,6 +74,7 @@ import ShiftsPage from "./pages/hrm/ShiftsPage";
 import PerformanceReviewsPage from "./pages/hrm/PerformanceReviewsPage";
 import TrainingPage from "./pages/hrm/TrainingPage";
 import AssetsPage from "./pages/hrm/AssetsPage";
+import EmployeeLoansPage from "./pages/hrm/EmployeeLoansPage";
 import PayslipPage from "./pages/hrm/PayslipPage";
 import DirectorsPage from "./pages/directors/DirectorsPage";
 import WarehousesPage from "./pages/warehouses/WarehousesPage";
@@ -228,6 +229,7 @@ const App = () => (
             <Route path="/hrm/performance" element={<ProtectedRoute><AppLayout><PerformanceReviewsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm/training" element={<ProtectedRoute><AppLayout><TrainingPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm/assets" element={<ProtectedRoute><AppLayout><AssetsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/hrm/loans" element={<ProtectedRoute><AppLayout><EmployeeLoansPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm/payslip/:id" element={<ProtectedRoute><AppLayout><PayslipPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/warehouses" element={<ProtectedRoute><AppLayout><WarehousesPage /></AppLayout></ProtectedRoute>} />
