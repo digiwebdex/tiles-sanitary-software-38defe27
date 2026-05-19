@@ -20,6 +20,7 @@ import { fetchCurrentSubscription } from "@/services/dealerSubscriptionService";
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, readonlyAllowed: true },
   { path: "/products", label: "Products", icon: Package },
+  { path: "/damage", label: "Damage / Broken", icon: AlertTriangle, dealerAdminOnly: true },
   { path: "/suppliers", label: "Suppliers", icon: Truck },
   { path: "/purchases", label: "Purchases", icon: ShoppingCart },
   { path: "/purchases/auto-draft", label: "Auto-PO Drafts", icon: Sparkles, dealerAdminOnly: true },
