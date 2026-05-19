@@ -64,6 +64,7 @@ import BankAccountDetailPage from "./pages/bank-accounts/BankAccountDetailPage";
 import CashbookPage from "./pages/cashbook/CashbookPage";
 import CashClosingPage from "./pages/cash-closing/CashClosingPage";
 import FinancialStatementsPage from "./pages/financials/FinancialStatementsPage";
+import JournalPage from "./pages/journal/JournalPage";
 import HRMPage from "./pages/hrm/HRMPage";
 import DirectorsPage from "./pages/directors/DirectorsPage";
 import WarehousesPage from "./pages/warehouses/WarehousesPage";
@@ -201,6 +202,7 @@ const App = () => (
             <Route path="/customers/statements" element={<ProtectedRoute><AppLayout><CustomerStatementsBulkPage /></AppLayout></ProtectedRoute>} />
             <Route path="/customers/:customerId/statement" element={<ProtectedRoute><AppLayout><CustomerStatementPage /></AppLayout></ProtectedRoute>} />
             <Route path="/financials" element={<ProtectedRoute><AppLayout><FinancialStatementsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/journal" element={<ProtectedRoute><AppLayout><JournalPage /></AppLayout></ProtectedRoute>} />
             <Route path="/hrm" element={<ProtectedRoute><AppLayout><HRMPage /></AppLayout></ProtectedRoute>} />
             <Route path="/directors" element={<ProtectedRoute><AppLayout><DirectorsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/warehouses" element={<ProtectedRoute><AppLayout><WarehousesPage /></AppLayout></ProtectedRoute>} />
