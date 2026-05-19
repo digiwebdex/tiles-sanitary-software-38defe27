@@ -78,6 +78,8 @@ const PaymentSchema = z.object({
   transport: z.coerce.number().optional(),
   other_allowance: z.coerce.number().optional(),
   deduction: z.coerce.number().optional(),
+  // Phase 11: auto-apply assigned salary_components on top of structure breakdown
+  apply_components: z.coerce.boolean().optional().default(true),
 });
 
 router.get('/', async (req, res) => {
