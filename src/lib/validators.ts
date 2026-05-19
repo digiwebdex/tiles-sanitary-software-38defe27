@@ -49,6 +49,8 @@ export const createPurchaseServiceSchema = z.object({
   items: z.array(z.object({
     product_id: uuidSchema,
     quantity: z.number().positive("Quantity must be > 0"),
+    qty_sqft: z.number().min(0).optional(),
+    rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
     purchase_rate: z.number().min(0, "Purchase rate cannot be negative"),
     offer_price: z.number().min(0, "Offer price cannot be negative"),
     transport_cost: z.number().min(0, "Transport cost cannot be negative"),
