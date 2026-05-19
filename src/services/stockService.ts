@@ -167,6 +167,39 @@ export const stockService = {
     });
   },
 
+  /**
+   * P2 — List recent broken/damage entries for the dealer.
+   */
+  listDamages: async (
+    dealerId: string,
+    opts: { limit?: number; from?: string; to?: string } = {},
+  ): Promise<DamageEntry[]> => {
+    const params = new URLSearchParams({ dealerId });
+    if (opts.limit) params.set('limit', String(opts.limit));
+    if (opts.from) params.set('from', opts.from);
+    if (opts.to) params.set('to', opts.to);
+    const res = await vpsAuthedFetch(`/api/adjustments/broken?${params.toString()}`);
+    const body = await res.json().catch(() => ({} as any));
+    if (!res.ok) throw new Error((body as any)?.error || 'Failed to load damage entries');
+    return ((body as any).rows ?? []) as DamageEntry[];
+  },
+
   getAvailableQty,
   deductStockWithBackorder,
 };
+
+export interface DamageEntry {
+  id: string;
+  created_at: string;
+  user_id: string | null;
+  reason: string | null;
+  total_pieces_delta: number;
+  box_qty_delta: number;
+  piece_qty_delta: number;
+  product_id: string;
+  product_name: string;
+  sku: string;
+  unit_type: 'box_sft' | 'piece';
+  pieces_per_box: number | null;
+  per_box_sft: number | null;
+}
