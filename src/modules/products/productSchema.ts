@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const optNum = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? null : v),
+  z.coerce.number().min(0).nullable().optional(),
+);
+
 export const productSchema = z
   .object({
     sku: z.string().trim().min(1, "Product code is required").max(50, "Product code too long"),
@@ -11,6 +16,15 @@ export const productSchema = z
     unit_type: z.enum(["box_sft", "piece"], { required_error: "Unit type is required" }),
     per_box_sft: z.coerce.number().min(0).optional().nullable(),
     pieces_per_box: z.coerce.number().int().positive("Pieces per box must be at least 1").default(1),
+
+    // Phase T1 — tile dimensions + opt-in SQFT base unit (all optional)
+    tile_width: optNum,
+    tile_height: optNum,
+    size_unit: z.enum(["inch", "cm", "feet"]).default("inch").optional(),
+    sqft_per_piece: optNum,
+    sqft_per_box: optNum,
+    stock_base_unit: z.enum(["piece", "sqft"]).default("piece").optional(),
+
     cost_price: z.coerce.number().min(0, "Cost price must be ≥ 0"),
     default_sale_rate: z.coerce.number().positive("Product price must be greater than 0"),
     reorder_level: z.coerce.number().int().min(0, "Reorder level must be ≥ 0"),
@@ -27,6 +41,14 @@ export const productSchema = z
         message: "Per box SFT is required when unit type is Box/SFT",
         path: ["per_box_sft"],
       });
+    }
+    if (data.stock_base_unit === "sqft") {
+      if (!data.tile_width || data.tile_width <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Tile width is required for SQFT base", path: ["tile_width"] });
+      }
+      if (!data.tile_height || data.tile_height <= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Tile height is required for SQFT base", path: ["tile_height"] });
+      }
     }
   })
   .transform((data) => ({
