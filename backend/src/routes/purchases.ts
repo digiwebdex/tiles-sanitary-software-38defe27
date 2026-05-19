@@ -158,7 +158,12 @@ router.get('/:id', async (req: Request, res: Response) => {
 const purchaseItemSchema = z.object({
   product_id: z.string().uuid(),
   quantity: z.coerce.number().positive(),
+  /** Phase T4a — canonical SQFT qty for tile products (stock_base_unit='sqft' in T5).
+   *  NULL = piece-mode item; legacy `quantity` is canonical. */
+  qty_sqft: z.coerce.number().min(0).optional().nullable(),
   purchase_rate: z.coerce.number().min(0),
+  /** 'per_piece' | 'per_box' | 'per_sqft'. NULL → legacy per_piece. */
+  rate_unit: z.enum(['per_piece', 'per_box', 'per_sqft']).optional().nullable(),
   offer_price: z.coerce.number().min(0).default(0),
   transport_cost: z.coerce.number().min(0).default(0),
   labor_cost: z.coerce.number().min(0).default(0),
