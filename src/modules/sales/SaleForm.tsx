@@ -693,7 +693,9 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
     setMixedBatchDialogOpen(false);
     if (pendingValues) {
       const hasReservations = Object.values(reservationSelections).some(arr => arr.length > 0);
-      await onSubmit({ ...pendingValues, mixed_batch_acknowledged: true, commission, ...(hasReservations ? { reservation_selections: reservationSelections } : {}) } as any);
+      const productMap = new Map(products.map((p) => [p.id, p as any]));
+      const enrichedItems = enrichItemsWithSqft(pendingValues.items as any[], productMap, { defaultRateUnit: "per_sqft" });
+      await onSubmit({ ...pendingValues, items: enrichedItems, mixed_batch_acknowledged: true, commission, ...(hasReservations ? { reservation_selections: reservationSelections } : {}) } as any);
       setPendingValues(null);
       setMixedBatchInfo(null);
     }
