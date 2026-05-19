@@ -322,6 +322,7 @@ router.post('/purchases', async (req: Request, res: Response) => {
         dealer_id: dealerId,
         product_id: it.product_id,
         quantity: it.quantity,
+        qty_sqft: (it as any).qty_sqft ?? null,
         unit_price: it.unit_price,
         total: it.total,
         reason: it.reason || null,
