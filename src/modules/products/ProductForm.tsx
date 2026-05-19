@@ -342,6 +342,122 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
                       </FormItem>
                     )}
                   />
+
+                  <Separator />
+
+                  {/* Tile dimensions for SQFT calculation */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Tile Size (for SQFT calculation)</p>
+                        <p className="text-xs text-muted-foreground">
+                          Enter physical tile dimensions. SQFT per piece and per box are auto-calculated.
+                        </p>
+                      </div>
+                      {stockBaseUnit === "sqft" && (
+                        <span className="text-xs font-semibold uppercase tracking-wide rounded bg-primary/15 text-primary px-2 py-1">
+                          Base Unit = SQFT
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="tile_width"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Width</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.001"
+                                placeholder="8"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="tile_height"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Height</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.001"
+                                placeholder="12"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="size_unit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Unit</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value ?? "inch"}>
+                              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value="inch">Inch</SelectItem>
+                                <SelectItem value="cm">CM</SelectItem>
+                                <SelectItem value="feet">Feet</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-md border bg-muted/30 px-3 py-2">
+                        <p className="text-[11px] uppercase text-muted-foreground">SQFT per Piece</p>
+                        <p className="text-sm font-semibold">
+                          {form.watch("sqft_per_piece")?.toString() || "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-md border bg-muted/30 px-3 py-2">
+                        <p className="text-[11px] uppercase text-muted-foreground">SQFT per Box</p>
+                        <p className="text-sm font-semibold">
+                          {form.watch("sqft_per_box")?.toString() || "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="stock_base_unit"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between rounded-md border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Track stock in SQFT</FormLabel>
+                            <FormDescription className="text-xs">
+                              When enabled, stock is stored as total SQFT and all entry forms ask for SQFT. Box + Pcs are shown as auto-conversion. Requires width &amp; height.
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value === "sqft"}
+                              onCheckedChange={(checked) => field.onChange(checked ? "sqft" : "piece")}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </>
               )}
 
