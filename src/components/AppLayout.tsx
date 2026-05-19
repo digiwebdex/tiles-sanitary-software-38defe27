@@ -50,6 +50,7 @@ const navItems = [
   { path: "/hrm/salary-structure", label: "Salary Structure", icon: Wallet, dealerAdminOnly: true },
   { path: "/hrm/documents", label: "Employee Documents", icon: FileText, dealerAdminOnly: true },
   { path: "/hrm/shifts", label: "Shift Management", icon: Clock, dealerAdminOnly: true },
+  { path: "/hrm/performance", label: "Performance Reviews", icon: Award, dealerAdminOnly: true },
   { path: "/holidays", label: "Holidays", icon: CalendarDays, dealerAdminOnly: true },
   { path: "/directors", label: "Directors", icon: Crown, dealerAdminOnly: true },
   { path: "/warehouses", label: "Warehouses", icon: Warehouse, dealerAdminOnly: true },
