@@ -48,6 +48,8 @@ const HRMPage = () => {
   const today = new Date().toISOString().slice(0, 10);
   const [attDate, setAttDate] = useState(today);
   const [bulkStatus, setBulkStatus] = useState<Record<string, string>>({});
+  const [checkIns, setCheckIns] = useState<Record<string, string>>({});
+  const [bulkCheckIn, setBulkCheckIn] = useState("09:00");
   const [attPeriod, setAttPeriod] = useState(new Date().toISOString().slice(0, 7));
 
   // Advances
