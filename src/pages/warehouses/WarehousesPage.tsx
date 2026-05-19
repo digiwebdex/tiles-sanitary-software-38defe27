@@ -23,9 +23,10 @@ const WarehousesPage = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", code: "", address: "", manager_name: "", manager_phone: "", is_default: false, notes: "" });
   const [trOpen, setTrOpen] = useState(false);
+  const [trMode, setTrMode] = useState<"request" | "immediate">("request");
   const [tr, setTr] = useState({
     transfer_no: "", from_warehouse_id: "", to_warehouse_id: "",
-    product_name_snapshot: "", quantity: 0, unit: "pc",
+    product_name_snapshot: "", quantity: 0, qty_sqft: 0, unit: "pc",
     transport_cost: 0, payment_method: "cash" as "cash" | "bank",
     bank_account_id: "", notes: "",
   });
@@ -46,13 +47,44 @@ const WarehousesPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
   const trMut = useMutation({
-    mutationFn: () => warehouseService.createTransfer(dealerId, {
-      ...tr, bank_account_id: tr.payment_method === "bank" ? tr.bank_account_id : null,
-      from_warehouse_id: tr.from_warehouse_id || null, to_warehouse_id: tr.to_warehouse_id || null,
-    } as any),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); setTrOpen(false); toast.success("Transfer recorded"); },
+    mutationFn: () => {
+      const payload = {
+        ...tr, bank_account_id: tr.payment_method === "bank" ? tr.bank_account_id : null,
+        from_warehouse_id: tr.from_warehouse_id || null, to_warehouse_id: tr.to_warehouse_id || null,
+      } as any;
+      return trMode === "request"
+        ? warehouseService.requestTransfer(dealerId, payload)
+        : warehouseService.createTransfer(dealerId, payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["warehouse-transfers"] });
+      setTrOpen(false);
+      toast.success(trMode === "request" ? "Transfer requested" : "Transfer recorded");
+    },
     onError: (e: any) => toast.error(e.message),
   });
+  const approveMut = useMutation({
+    mutationFn: (id: string) => warehouseService.approveTransfer(id, dealerId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); toast.success("Approved"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const rejectMut = useMutation({
+    mutationFn: (id: string) => warehouseService.rejectTransfer(id, dealerId, window.prompt("Reason?") ?? undefined),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); toast.success("Rejected"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const receiveMut = useMutation({
+    mutationFn: (id: string) => warehouseService.receiveTransfer(id, dealerId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); toast.success("Received — cost posted"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, "default" | "outline" | "secondary" | "destructive"> = {
+      requested: "outline", approved: "secondary", received: "default", rejected: "destructive", cancelled: "secondary",
+    };
+    return <Badge variant={map[s] || "outline"}>{s}</Badge>;
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
