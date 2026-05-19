@@ -128,6 +128,21 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
 
   const category = form.watch("category");
   const unitType = form.watch("unit_type");
+  const tileWidth = form.watch("tile_width");
+  const tileHeight = form.watch("tile_height");
+  const sizeUnit = form.watch("size_unit");
+  const piecesPerBox = form.watch("pieces_per_box");
+  const stockBaseUnit = form.watch("stock_base_unit");
+
+  // Live recompute sqft_per_piece + sqft_per_box from tile dimensions.
+  useEffect(() => {
+    if (category !== "tiles") return;
+    const spp = computeSqftPerPiece(tileWidth ?? 0, tileHeight ?? 0, sizeUnit ?? "inch");
+    const spb = computeSqftPerBox(spp, piecesPerBox);
+    form.setValue("sqft_per_piece", spp > 0 ? spp : null, { shouldDirty: false });
+    form.setValue("sqft_per_box", spb > 0 ? spb : null, { shouldDirty: false });
+  }, [category, tileWidth, tileHeight, sizeUnit, piecesPerBox, form]);
+
 
   const handleSubmitWithValidation = async (values: ProductFormValues) => {
     setSkuError(null);
