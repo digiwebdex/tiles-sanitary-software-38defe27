@@ -174,7 +174,7 @@ const SalaryStructurePage = () => {
   // when employee changes, prefill basic preview using their base_salary if present
   const setActiveEmployee = (id: string) => {
     setEmployeeId(id);
-    const emp = employees.find((e: any) => e.id === id);
+    const emp: any = employees.find((e: any) => e.id === id);
     setBasicForPreview(Number(emp?.basic ?? emp?.base_salary ?? emp?.basic_salary ?? 0) || 0);
   };
 
