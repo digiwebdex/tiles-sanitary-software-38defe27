@@ -31,10 +31,10 @@ export async function up(knex: Knex): Promise<void> {
     CREATE INDEX IF NOT EXISTS holidays_dealer_idx ON public.holidays(dealer_id);
     CREATE INDEX IF NOT EXISTS holidays_dealer_date_idx ON public.holidays(dealer_id, holiday_date);
 
-    DROP TRIGGER IF EXISTS holidays_set_updated_at ON public.holidays;
-    CREATE TRIGGER holidays_set_updated_at
+    DROP TRIGGER IF EXISTS trg_holidays_updated_at ON public.holidays;
+    CREATE TRIGGER trg_holidays_updated_at
       BEFORE UPDATE ON public.holidays
-      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+      FOR EACH ROW EXECUTE FUNCTION public.tg_set_updated_at();
   `);
 }
 
