@@ -458,6 +458,22 @@ const ProductForm = ({ defaultValues, onSubmit, isLoading, productId, dealerId }
                         </FormItem>
                       )}
                     />
+
+                    {/* Phase T5 — per-product cutover for existing tile products still on piece base. */}
+                    {productId && dealerId && stockBaseUnit !== "sqft" && (
+                      <div className="rounded-md border border-dashed p-3">
+                        <div className="mb-2 text-xs text-muted-foreground">
+                          One-time backfill: convert existing piece-based stock for this product
+                          to SQFT canonical. Requires width, height, and pieces/box saved first.
+                        </div>
+                        <MigrateToSqftButton
+                          productId={productId}
+                          dealerId={dealerId}
+                          productName={form.watch("name") as string | undefined}
+                          onMigrated={() => form.setValue("stock_base_unit", "sqft", { shouldDirty: true })}
+                        />
+                      </div>
+                    )}
                   </div>
                 </>
               )}
