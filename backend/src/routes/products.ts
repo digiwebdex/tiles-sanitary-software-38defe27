@@ -56,6 +56,8 @@ const FILTERABLE = new Set([
   'unit_type',
   'sku',
   'barcode',
+  'product_group',
+  'grade',
 ]);
 
 const WRITABLE = new Set([
@@ -64,6 +66,9 @@ const WRITABLE = new Set([
   'name',
   'category',
   'brand',
+  'product_group',
+  'grade',
+  'description',
   'size',
   'color',
   'material',
@@ -92,6 +97,9 @@ const productWriteSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
   category: z.enum(['tiles', 'sanitary', 'tile', 'accessory']).optional(),
   brand: z.string().trim().max(100).nullable().optional(),
+  product_group: z.string().trim().max(100).nullable().optional(),
+  grade: z.string().trim().max(50).nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
   size: z.string().trim().max(100).nullable().optional(),
   color: z.string().trim().max(100).nullable().optional(),
   material: z.string().trim().max(100).nullable().optional(),
