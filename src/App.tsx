@@ -99,6 +99,8 @@ import SettingsPage from "./pages/settings/SettingsPage";
 import PricingTiersPage from "./pages/settings/PricingTiersPage";
 import DataBackupPage from "./pages/settings/DataBackupPage";
 import RoleManagementPage from "./pages/settings/RoleManagementPage";
+import BranchesPage from "./pages/settings/BranchesPage";
+import NoticesPage from "./pages/settings/NoticesPage";
 import PortalUsersPage from "./pages/admin/PortalUsersPage";
 import PortalLayout from "./pages/portal/PortalLayout";
 import PortalLoginPage from "./pages/portal/PortalLoginPage";
@@ -197,6 +199,9 @@ const App = () => (
             <Route path="/settings/pricing-tiers" element={<ProtectedRoute><AppLayout><PricingTiersPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/data-backup" element={<ProtectedRoute><AppLayout><DataBackupPage /></AppLayout></ProtectedRoute>} />
             <Route path="/settings/roles" element={<ProtectedRoute><AppLayout><RoleManagementPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/settings/branches" element={<ProtectedRoute><AppLayout><BranchesPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/settings/notices" element={<ProtectedRoute><AppLayout><NoticesPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/notices" element={<ProtectedRoute allowReadonly><AppLayout><NoticesPage /></AppLayout></ProtectedRoute>} />
             <Route path="/bank-accounts" element={<ProtectedRoute><AppLayout><BankAccountsPage /></AppLayout></ProtectedRoute>} />
             <Route path="/bank-accounts/:id" element={<ProtectedRoute><AppLayout><BankAccountDetailPage /></AppLayout></ProtectedRoute>} />
             <Route path="/cashbook" element={<ProtectedRoute><AppLayout><CashbookPage /></AppLayout></ProtectedRoute>} />
