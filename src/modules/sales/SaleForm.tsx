@@ -675,7 +675,10 @@ const SaleForm = ({ dealerId, onSubmit, isLoading, defaultValues: dv, submitLabe
 
     // Include reservation selections + commission draft in submit
     const hasReservations = Object.values(reservationSelections).some(arr => arr.length > 0);
-    await onSubmit({ ...values, ...flags, commission, ...(hasReservations ? { reservation_selections: reservationSelections } : {}) } as any);
+    // Phase T4b: enrich tile-SQFT items with qty_sqft + rate_unit.
+    const productMap = new Map(products.map((p) => [p.id, p as any]));
+    const enrichedItems = enrichItemsWithSqft(values.items as any[], productMap, { defaultRateUnit: "per_sqft" });
+    await onSubmit({ ...values, items: enrichedItems, ...flags, commission, ...(hasReservations ? { reservation_selections: reservationSelections } : {}) } as any);
   };
 
   const handleBackorderConfirm = async () => {
