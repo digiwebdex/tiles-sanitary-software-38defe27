@@ -207,6 +207,14 @@ router.post('/:id/salary-payments', async (req, res) => {
         entry_date: row.payment_date, created_by: req.user?.userId ?? null,
       });
     }
+
+    // Settle outstanding advances
+    if (advanceDue > 0) {
+      for (const adv of openAdvances) {
+        await trx('salary_advances').where({ id: adv.id })
+          .update({ settled_amount: adv.amount, status: 'settled' });
+      }
+    }
     await trx.commit();
     res.status(201).json(row);
   } catch (e: any) {
