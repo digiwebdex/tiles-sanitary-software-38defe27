@@ -76,6 +76,7 @@ import emiRoutes from './routes/emi';
 import branchesRoutes from './routes/branches';
 import noticesRoutes from './routes/notices';
 import leavesRoutes from './routes/leaves';
+import salaryComponentsRoutes from './routes/salaryComponents';
 import path from 'path';
 
 const app = express();
@@ -232,6 +233,7 @@ app.use('/api/emi', emiRoutes);
 app.use('/api/branches', branchesRoutes);
 app.use('/api/notices', noticesRoutes);
 app.use('/api/leaves', leavesRoutes);
+app.use('/api/salary-components', salaryComponentsRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
