@@ -13,6 +13,8 @@ export interface Warehouse {
   notes: string | null;
 }
 
+export type TransferStatus = "requested" | "approved" | "rejected" | "received" | "cancelled";
+
 export interface WarehouseTransfer {
   id: string;
   transfer_no: string | null;
@@ -23,12 +25,18 @@ export interface WarehouseTransfer {
   product_id: string | null;
   product_name_snapshot: string | null;
   quantity: number;
+  qty_sqft: number;
   unit: string;
   transport_cost: number;
   payment_method: "cash" | "bank";
   bank_account_id: string | null;
   transfer_date: string;
   notes: string | null;
+  status: TransferStatus;
+  reject_reason?: string | null;
+  requested_at?: string | null;
+  approved_at?: string | null;
+  received_at?: string | null;
 }
 
 const j = async (r: Response) => {
