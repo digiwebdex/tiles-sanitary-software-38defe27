@@ -151,6 +151,29 @@ router.get('/salary-payments', async (req, res) => {
   res.json(rows);
 });
 
+router.get('/salary-payments/:id', async (req, res) => {
+  const dealerId = resolveDealer(req, res); if (!dealerId) return;
+  if (!requireAdmin(req, res)) return;
+  const row = await db('salary_payments as sp')
+    .leftJoin('employees as e', 'e.id', 'sp.employee_id')
+    .leftJoin('bank_accounts as ba', 'ba.id', 'sp.bank_account_id')
+    .where('sp.dealer_id', dealerId)
+    .andWhere('sp.id', req.params.id)
+    .select(
+      'sp.*',
+      'e.name as employee_name',
+      'e.employee_code',
+      'e.designation',
+      'e.department',
+      'e.phone as employee_phone',
+      'ba.account_name as bank_account_name',
+      'ba.bank_name'
+    )
+    .first();
+  if (!row) { res.status(404).json({ error: 'Payment not found' }); return; }
+  res.json(row);
+});
+
 router.post('/:id/salary-payments', async (req, res) => {
   const dealerId = resolveDealer(req, res); if (!dealerId) return;
   if (!requireAdmin(req, res)) return;
