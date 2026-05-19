@@ -165,10 +165,16 @@ router.post('/:id/salary-payments', async (req, res) => {
   const medical = p.data.medical ?? (basic * Number(struct?.medical_pct ?? 0) / 100);
   const transport = p.data.transport ?? (basic * Number(struct?.transport_pct ?? 0) / 100);
   const other_allowance = p.data.other_allowance ?? Number(struct?.other_allowance ?? 0);
-  const deduction = p.data.deduction ?? Number(struct?.deduction ?? 0);
+  const baseDeduction = p.data.deduction ?? Number(struct?.deduction ?? 0);
+
+  // Pull all open advances for this employee and add to deduction
+  const openAdvances = await db('salary_advances')
+    .where({ dealer_id: dealerId, employee_id: employeeId, status: 'open' });
+  const advanceDue = openAdvances.reduce((s, a) => s + (Number(a.amount) - Number(a.settled_amount)), 0);
+  const deduction = +(baseDeduction + advanceDue).toFixed(2);
   const net_payable = +(basic + house_rent + medical + transport + other_allowance - deduction).toFixed(2);
 
-  if (net_payable <= 0) { res.status(400).json({ error: 'Net payable must be positive' }); return; }
+  if (net_payable <= 0) { res.status(400).json({ error: 'Net payable must be positive (deductions exceed gross)' }); return; }
 
   const trx = await db.transaction();
   try {
