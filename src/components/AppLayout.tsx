@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, Receipt, RotateCcw,
   BookOpen, BarChart3, LogOut, Settings, Clock, Truck, Users, ShieldCheck, FileText,
   Undo2, MapPin, Zap, Gift, Wallet, FileSignature, Folder, HandCoins, MonitorSpeaker,
-  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale, Warehouse, ClipboardCheck, Sparkles, CalendarDays, AlertTriangle, CalendarClock, Building2, Megaphone, Award,
+  MessageCircle, UserCog, Inbox, HelpCircle, Crown, Landmark, Scale, Warehouse, ClipboardCheck, Sparkles, CalendarDays, AlertTriangle, CalendarClock, Building2, Megaphone, Award, GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDealerId } from "@/hooks/useDealerId";
@@ -51,6 +51,7 @@ const navItems = [
   { path: "/hrm/documents", label: "Employee Documents", icon: FileText, dealerAdminOnly: true },
   { path: "/hrm/shifts", label: "Shift Management", icon: Clock, dealerAdminOnly: true },
   { path: "/hrm/performance", label: "Performance Reviews", icon: Award, dealerAdminOnly: true },
+  { path: "/hrm/training", label: "Training & Skills", icon: GraduationCap, dealerAdminOnly: true },
   { path: "/holidays", label: "Holidays", icon: CalendarDays, dealerAdminOnly: true },
   { path: "/directors", label: "Directors", icon: Crown, dealerAdminOnly: true },
   { path: "/warehouses", label: "Warehouses", icon: Warehouse, dealerAdminOnly: true },
