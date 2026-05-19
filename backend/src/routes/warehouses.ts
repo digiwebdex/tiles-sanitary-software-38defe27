@@ -57,6 +57,7 @@ const TransferSchema = z.object({
   product_id: z.string().uuid().optional().nullable(),
   product_name_snapshot: z.string().max(200).optional().nullable(),
   quantity: z.coerce.number().positive(),
+  qty_sqft: z.coerce.number().min(0).default(0),
   unit: z.string().max(20).default('pc'),
   transport_cost: z.coerce.number().min(0).default(0),
   payment_method: z.enum(['cash', 'bank']).default('cash'),
