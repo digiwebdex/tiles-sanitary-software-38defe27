@@ -23,9 +23,10 @@ const WarehousesPage = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", code: "", address: "", manager_name: "", manager_phone: "", is_default: false, notes: "" });
   const [trOpen, setTrOpen] = useState(false);
+  const [trMode, setTrMode] = useState<"request" | "immediate">("request");
   const [tr, setTr] = useState({
     transfer_no: "", from_warehouse_id: "", to_warehouse_id: "",
-    product_name_snapshot: "", quantity: 0, unit: "pc",
+    product_name_snapshot: "", quantity: 0, qty_sqft: 0, unit: "pc",
     transport_cost: 0, payment_method: "cash" as "cash" | "bank",
     bank_account_id: "", notes: "",
   });
@@ -46,13 +47,44 @@ const WarehousesPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
   const trMut = useMutation({
-    mutationFn: () => warehouseService.createTransfer(dealerId, {
-      ...tr, bank_account_id: tr.payment_method === "bank" ? tr.bank_account_id : null,
-      from_warehouse_id: tr.from_warehouse_id || null, to_warehouse_id: tr.to_warehouse_id || null,
-    } as any),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); setTrOpen(false); toast.success("Transfer recorded"); },
+    mutationFn: () => {
+      const payload = {
+        ...tr, bank_account_id: tr.payment_method === "bank" ? tr.bank_account_id : null,
+        from_warehouse_id: tr.from_warehouse_id || null, to_warehouse_id: tr.to_warehouse_id || null,
+      } as any;
+      return trMode === "request"
+        ? warehouseService.requestTransfer(dealerId, payload)
+        : warehouseService.createTransfer(dealerId, payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["warehouse-transfers"] });
+      setTrOpen(false);
+      toast.success(trMode === "request" ? "Transfer requested" : "Transfer recorded");
+    },
     onError: (e: any) => toast.error(e.message),
   });
+  const approveMut = useMutation({
+    mutationFn: (id: string) => warehouseService.approveTransfer(id, dealerId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); toast.success("Approved"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const rejectMut = useMutation({
+    mutationFn: (id: string) => warehouseService.rejectTransfer(id, dealerId, window.prompt("Reason?") ?? undefined),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); toast.success("Rejected"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const receiveMut = useMutation({
+    mutationFn: (id: string) => warehouseService.receiveTransfer(id, dealerId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["warehouse-transfers"] }); toast.success("Received — cost posted"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, "default" | "outline" | "secondary" | "destructive"> = {
+      requested: "outline", approved: "secondary", received: "default", rejected: "destructive", cancelled: "secondary",
+    };
+    return <Badge variant={map[s] || "outline"}>{s}</Badge>;
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -124,8 +156,18 @@ const WarehousesPage = () => {
               <Dialog open={trOpen} onOpenChange={setTrOpen}>
                 <DialogTrigger asChild><Button><ArrowRightLeft className="h-4 w-4 mr-2" />New Transfer</Button></DialogTrigger>
                 <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>New Warehouse Transfer</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{trMode === "request" ? "Request" : "Record"} Warehouse Transfer</DialogTitle></DialogHeader>
                   <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label>Mode</Label>
+                      <Select value={trMode} onValueChange={(v: any) => setTrMode(v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="request">Send Request (needs approval)</SelectItem>
+                          <SelectItem value="immediate">Immediate (post directly)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div><Label>Transfer No.</Label><Input value={tr.transfer_no} onChange={e => setTr({ ...tr, transfer_no: e.target.value })} /></div>
                     <div></div>
                     <div>
@@ -144,7 +186,8 @@ const WarehousesPage = () => {
                     </div>
                     <div className="col-span-2"><Label>Product / Item *</Label><Input value={tr.product_name_snapshot} onChange={e => setTr({ ...tr, product_name_snapshot: e.target.value })} /></div>
                     <div><Label>Quantity *</Label><Input type="number" value={tr.quantity} onChange={e => setTr({ ...tr, quantity: Number(e.target.value) })} /></div>
-                    <div><Label>Unit</Label><Input value={tr.unit} onChange={e => setTr({ ...tr, unit: e.target.value })} /></div>
+                    <div><Label>Unit</Label><Input value={tr.unit} onChange={e => setTr({ ...tr, unit: e.target.value })} placeholder="pc / box / sft" /></div>
+                    <div className="col-span-2"><Label>Total SQFT (tiles)</Label><Input type="number" step="0.01" value={tr.qty_sqft} onChange={e => setTr({ ...tr, qty_sqft: Number(e.target.value) })} placeholder="Leave 0 for non-tile items" /></div>
                     <div><Label>Transport Cost</Label><Input type="number" value={tr.transport_cost} onChange={e => setTr({ ...tr, transport_cost: Number(e.target.value) })} /></div>
                     <div>
                       <Label>Payment Method</Label>
@@ -167,7 +210,9 @@ const WarehousesPage = () => {
                     )}
                     <div className="col-span-2"><Label>Notes</Label><Input value={tr.notes} onChange={e => setTr({ ...tr, notes: e.target.value })} /></div>
                   </div>
-                  <Button className="w-full mt-3" onClick={() => trMut.mutate()} disabled={trMut.isPending || tr.quantity <= 0}>Save Transfer</Button>
+                  <Button className="w-full mt-3" onClick={() => trMut.mutate()} disabled={trMut.isPending || tr.quantity <= 0}>
+                    {trMode === "request" ? "Send Request" : "Save Transfer"}
+                  </Button>
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -176,7 +221,9 @@ const WarehousesPage = () => {
                 <TableHeader><TableRow>
                   <TableHead>Date</TableHead><TableHead>No.</TableHead><TableHead>From</TableHead><TableHead>To</TableHead>
                   <TableHead>Item</TableHead><TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Transport</TableHead><TableHead>Method</TableHead>
+                  <TableHead className="text-right">SQFT</TableHead>
+                  <TableHead className="text-right">Transport</TableHead>
+                  <TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {transfers.map(t => (
@@ -187,11 +234,26 @@ const WarehousesPage = () => {
                       <TableCell>{t.to_warehouse_name || "—"}</TableCell>
                       <TableCell>{t.product_name_snapshot || "—"}</TableCell>
                       <TableCell className="text-right">{Number(t.quantity)} {t.unit}</TableCell>
+                      <TableCell className="text-right">{Number(t.qty_sqft) > 0 ? Number(t.qty_sqft).toFixed(2) : "—"}</TableCell>
                       <TableCell className="text-right font-mono">{formatCurrency(Number(t.transport_cost))}</TableCell>
-                      <TableCell><Badge variant="outline">{t.payment_method}</Badge></TableCell>
+                      <TableCell>{statusBadge(t.status)}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        {t.status === "requested" && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => approveMut.mutate(t.id)} disabled={approveMut.isPending}>Approve</Button>
+                            <Button size="sm" variant="destructive" onClick={() => rejectMut.mutate(t.id)} disabled={rejectMut.isPending}>Reject</Button>
+                          </>
+                        )}
+                        {t.status === "approved" && (
+                          <Button size="sm" onClick={() => receiveMut.mutate(t.id)} disabled={receiveMut.isPending}>Receive</Button>
+                        )}
+                        {(t.status === "received" || t.status === "rejected" || t.status === "cancelled") && (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
-                  {!transfers.length && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">No transfers yet.</TableCell></TableRow>}
+                  {!transfers.length && <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No transfers yet.</TableCell></TableRow>}
                 </TableBody>
               </Table>
             </CardContent>

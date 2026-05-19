@@ -13,6 +13,8 @@ export interface Warehouse {
   notes: string | null;
 }
 
+export type TransferStatus = "requested" | "approved" | "rejected" | "received" | "cancelled";
+
 export interface WarehouseTransfer {
   id: string;
   transfer_no: string | null;
@@ -23,12 +25,18 @@ export interface WarehouseTransfer {
   product_id: string | null;
   product_name_snapshot: string | null;
   quantity: number;
+  qty_sqft: number;
   unit: string;
   transport_cost: number;
   payment_method: "cash" | "bank";
   bank_account_id: string | null;
   transfer_date: string;
   notes: string | null;
+  status: TransferStatus;
+  reject_reason?: string | null;
+  requested_at?: string | null;
+  approved_at?: string | null;
+  received_at?: string | null;
 }
 
 const j = async (r: Response) => {
@@ -62,4 +70,16 @@ export const warehouseService = {
     vpsAuthedFetch(`/api/warehouses/transfers?dealerId=${dealerId}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
     }).then(j),
+  requestTransfer: (dealerId: string, data: Partial<WarehouseTransfer>) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/request?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    }).then(j),
+  approveTransfer: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/${id}/approve?dealerId=${dealerId}`, { method: "POST" }).then(j),
+  rejectTransfer: (id: string, dealerId: string, reason?: string) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/${id}/reject?dealerId=${dealerId}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }),
+    }).then(j),
+  receiveTransfer: (id: string, dealerId: string) =>
+    vpsAuthedFetch(`/api/warehouses/transfers/${id}/receive?dealerId=${dealerId}`, { method: "POST" }).then(j),
 };
