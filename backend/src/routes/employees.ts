@@ -78,6 +78,8 @@ const PaymentSchema = z.object({
   transport: z.coerce.number().optional(),
   other_allowance: z.coerce.number().optional(),
   deduction: z.coerce.number().optional(),
+  // Phase 11: auto-apply assigned salary_components on top of structure breakdown
+  apply_components: z.coerce.boolean().optional().default(true),
 });
 
 router.get('/', async (req, res) => {
@@ -171,8 +173,40 @@ router.post('/:id/salary-payments', async (req, res) => {
   const openAdvances = await db('salary_advances')
     .where({ dealer_id: dealerId, employee_id: employeeId, status: 'open' });
   const advanceDue = openAdvances.reduce((s, a) => s + (Number(a.amount) - Number(a.settled_amount)), 0);
-  const deduction = +(baseDeduction + advanceDue).toFixed(2);
-  const net_payable = +(basic + house_rent + medical + transport + other_allowance - deduction).toFixed(2);
+
+  // Phase 11: pull assigned salary components and compute allowance/deduction totals
+  let componentsAllowance = 0;
+  let componentsDeduction = 0;
+  const componentsSnapshot: Array<{ component_id: string; code: string; name: string; kind: string; amount: number }> = [];
+  if (p.data.apply_components) {
+    const assigned = await db('employee_salary_components as esc')
+      .join('salary_components as sc', 'sc.id', 'esc.component_id')
+      .where('esc.dealer_id', dealerId)
+      .andWhere('esc.employee_id', employeeId)
+      .andWhere('esc.active', true)
+      .andWhere('sc.active', true)
+      .select('sc.id', 'sc.code', 'sc.name', 'sc.kind', 'sc.calc',
+              'sc.default_amount', 'sc.default_percent',
+              'esc.amount_override', 'esc.percent_override');
+    for (const c of assigned) {
+      let amt = 0;
+      if (c.calc === 'fixed') {
+        amt = Number(c.amount_override ?? c.default_amount ?? 0);
+      } else {
+        const pct = Number(c.percent_override ?? c.default_percent ?? 0);
+        amt = +(basic * pct / 100).toFixed(2);
+      }
+      if (!amt) continue;
+      componentsSnapshot.push({ component_id: c.id, code: c.code, name: c.name, kind: c.kind, amount: amt });
+      if (c.kind === 'allowance') componentsAllowance += amt;
+      else componentsDeduction += amt;
+    }
+    componentsAllowance = +componentsAllowance.toFixed(2);
+    componentsDeduction = +componentsDeduction.toFixed(2);
+  }
+
+  const deduction = +(baseDeduction + advanceDue + componentsDeduction).toFixed(2);
+  const net_payable = +(basic + house_rent + medical + transport + other_allowance + componentsAllowance - deduction).toFixed(2);
 
   if (net_payable <= 0) { res.status(400).json({ error: 'Net payable must be positive (deductions exceed gross)' }); return; }
 
@@ -182,6 +216,9 @@ router.post('/:id/salary-payments', async (req, res) => {
       dealer_id: dealerId, employee_id: employeeId,
       period: p.data.period,
       basic, house_rent, medical, transport, other_allowance, deduction, net_payable,
+      components_allowance: componentsAllowance,
+      components_deduction: componentsDeduction,
+      components_snapshot: componentsSnapshot.length ? JSON.stringify(componentsSnapshot) : null,
       payment_method: p.data.payment_method,
       bank_account_id: p.data.payment_method === 'bank' ? (p.data.bank_account_id ?? null) : null,
       payment_date: p.data.payment_date ?? trx.fn.now(),
