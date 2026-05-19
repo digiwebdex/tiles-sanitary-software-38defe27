@@ -49,6 +49,10 @@ export interface SaleItemInput {
   /** Optional dual-unit fields (Box + Pc UI). Backend derives from `quantity` when absent. */
   box_qty?: number;
   piece_qty?: number;
+  /** Phase T4: canonical SQFT for tile (stock_base_unit='sqft') items. */
+  qty_sqft?: number;
+  /** Phase T4: pricing unit context: per_piece | per_box | per_sqft. */
+  rate_unit?: "per_piece" | "per_box" | "per_sqft";
   sale_rate: number;
   rate_source?: "default" | "tier" | "manual";
   tier_id?: string | null;
