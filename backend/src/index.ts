@@ -217,6 +217,7 @@ app.use('/api/warehouses', warehousesRoutes);
 app.use('/api/reports', phase3ReportsRoutes);
 app.use('/api/auto-po', autoPoRoutes);
 app.use('/api/customer-statements', customerStatementsRoutes);
+app.use('/api/leads', leadsRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
