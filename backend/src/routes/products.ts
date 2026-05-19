@@ -796,4 +796,40 @@ router.post('/:id/cost-price', requireRole('dealer_admin'), async (req: Request,
   }
 });
 
+/**
+ * Phase T5 — Per-product cutover to SQFT base unit.
+ * POST /api/products/:id/migrate-to-sqft  body: { dealerId, dryRun?: boolean }
+ * Calls PL/pgSQL `migrate_product_to_sqft(uuid, boolean)` which is dealer-scoped
+ * via the product row. dealer_admin or super_admin only.
+ */
+router.post(
+  '/:id/migrate-to-sqft',
+  authenticate,
+  tenantGuard,
+  requireRole('dealer_admin', 'super_admin'),
+  async (req: Request, res: Response) => {
+    try {
+      const dealerId = (req.body?.dealerId ?? req.query.dealerId) as string | undefined;
+      const dryRun = req.body?.dryRun !== false; // default true (safe)
+      if (!dealerId) return res.status(400).json({ error: 'dealerId required' });
+
+      // Verify product belongs to this dealer (defense in depth)
+      const owner = await db('products')
+        .where({ id: req.params.id, dealer_id: dealerId })
+        .first('id');
+      if (!owner) return res.status(404).json({ error: 'product not found for dealer' });
+
+      const result = await db.raw(
+        'SELECT public.migrate_product_to_sqft(?, ?) AS data',
+        [req.params.id, dryRun],
+      );
+      const data = result.rows?.[0]?.data ?? null;
+      res.json(data);
+    } catch (err: any) {
+      console.error('[products/migrate-to-sqft]', err.message);
+      res.status(500).json({ error: err.message || 'Migration failed' });
+    }
+  },
+);
+
 export default router;
