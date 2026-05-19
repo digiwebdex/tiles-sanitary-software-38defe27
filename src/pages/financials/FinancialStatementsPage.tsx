@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useDealerId } from "@/hooks/useDealerId";
 import { financialService } from "@/services/financialService";
 import { formatCurrency } from "@/lib/utils";
-import { Printer, TrendingUp, Scale } from "lucide-react";
+import { Printer, TrendingUp, Scale, BookOpen } from "lucide-react";
 
 const FinancialStatementsPage = () => {
   const dealerId = useDealerId();
@@ -17,6 +17,7 @@ const FinancialStatementsPage = () => {
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [pl, setPl] = useState({ from: monthAgo, to: today });
   const [bs, setBs] = useState({ asOf: today });
+  const [tb, setTb] = useState({ asOf: today });
 
   const { data: pAndL, isLoading: plLoading } = useQuery({
     queryKey: ["pnl", dealerId, pl],
@@ -27,6 +28,12 @@ const FinancialStatementsPage = () => {
   const { data: balance, isLoading: bsLoading } = useQuery({
     queryKey: ["balance-sheet", dealerId, bs],
     queryFn: () => financialService.balanceSheet(dealerId, bs.asOf),
+    enabled: !!dealerId,
+  });
+
+  const { data: trial, isLoading: tbLoading } = useQuery({
+    queryKey: ["trial-balance", dealerId, tb],
+    queryFn: () => financialService.trialBalance(dealerId, tb.asOf),
     enabled: !!dealerId,
   });
 
@@ -41,6 +48,7 @@ const FinancialStatementsPage = () => {
         <TabsList>
           <TabsTrigger value="pnl"><TrendingUp className="h-4 w-4 mr-2" /> Profit &amp; Loss</TabsTrigger>
           <TabsTrigger value="bs"><Scale className="h-4 w-4 mr-2" /> Balance Sheet</TabsTrigger>
+          <TabsTrigger value="tb"><BookOpen className="h-4 w-4 mr-2" /> Trial Balance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pnl" className="space-y-4">
