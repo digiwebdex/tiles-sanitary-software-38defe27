@@ -119,6 +119,8 @@ const PurchaseForm = ({ dealerId, showOfferPrice, onSubmit, isLoading }: Purchas
         per_box_sft: number | null;
         pieces_per_box: number | null;
         category: string;
+        stock_base_unit?: string | null;
+        sqft_per_piece?: number | null;
       }>;
     },
     enabled: !!dealerId,
