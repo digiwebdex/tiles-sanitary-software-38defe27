@@ -69,6 +69,17 @@ const HRMPage = () => {
     queryKey: ["bank-accounts", dealerId],
     queryFn: () => bankAccountService.list(dealerId), enabled: !!dealerId,
   });
+  const { data: shifts = [] } = useQuery({
+    queryKey: ["shifts", dealerId],
+    queryFn: () => shiftService.list(), enabled: !!dealerId,
+  });
+  const shiftMap = Object.fromEntries(shifts.map((s) => [s.id, s]));
+  const assignShift = useMutation({
+    mutationFn: ({ id, shift_id }: { id: string; shift_id: string | null }) =>
+      employeeService.update(id, dealerId, { shift_id }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["employees"] }); toast.success("Shift assigned"); },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const createEmp = useMutation({
     mutationFn: () => employeeService.create(dealerId, empForm),
