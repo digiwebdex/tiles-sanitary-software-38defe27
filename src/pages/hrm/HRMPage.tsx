@@ -404,6 +404,39 @@ const HRMPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Advance issuance dialog */}
+      <Dialog open={!!advFor} onOpenChange={(o) => !o && setAdvFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Issue Advance — {advFor?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Amount *</Label><Input type="number" value={advForm.amount} onChange={e => setAdvForm({ ...advForm, amount: Number(e.target.value) })} /></div>
+            <div>
+              <Label>Payment Method</Label>
+              <Select value={advForm.payment_method} onValueChange={(v: any) => setAdvForm({ ...advForm, payment_method: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank">Bank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {advForm.payment_method === "bank" && (
+              <div>
+                <Label>Bank Account *</Label>
+                <Select value={advForm.bank_account_id} onValueChange={(v) => setAdvForm({ ...advForm, bank_account_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select bank" /></SelectTrigger>
+                  <SelectContent>
+                    {banks.filter(b => b.is_active).map(b => <SelectItem key={b.id} value={b.id}>{b.bank_name} — {b.account_number}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div><Label>Notes</Label><Input value={advForm.notes} onChange={e => setAdvForm({ ...advForm, notes: e.target.value })} /></div>
+            <Button className="w-full" onClick={() => issueAdvance.mutate()} disabled={issueAdvance.isPending || advForm.amount <= 0 || (advForm.payment_method === "bank" && !advForm.bank_account_id)}>Issue Advance</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
