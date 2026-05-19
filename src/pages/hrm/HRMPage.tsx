@@ -83,7 +83,51 @@ const HRMPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const openStruct = async (emp: Employee) => {
+  // Attendance queries & mutations
+  const { data: attRows = [] } = useQuery({
+    queryKey: ["attendance", dealerId, attDate],
+    queryFn: () => employeeService.attendance(dealerId, { from: attDate, to: attDate }),
+    enabled: !!dealerId && tab === "attendance",
+  });
+  const { data: attSummary = [] } = useQuery({
+    queryKey: ["attendance-summary", dealerId, attPeriod],
+    queryFn: () => employeeService.attendanceSummary(dealerId, attPeriod),
+    enabled: !!dealerId && tab === "attendance",
+  });
+  const saveBulk = useMutation({
+    mutationFn: () => {
+      const entries = Object.entries(bulkStatus)
+        .filter(([, s]) => s)
+        .map(([employee_id, status]) => ({ employee_id, status }));
+      if (!entries.length) throw new Error("Mark at least one employee");
+      return employeeService.bulkAttendance(dealerId, attDate, entries);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["attendance"] }); qc.invalidateQueries({ queryKey: ["attendance-summary"] }); setBulkStatus({}); toast.success("Attendance saved"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Advances queries & mutations
+  const { data: advances = [] } = useQuery({
+    queryKey: ["advances", dealerId],
+    queryFn: () => employeeService.advances(dealerId),
+    enabled: !!dealerId && tab === "advances",
+  });
+  const issueAdvance = useMutation({
+    mutationFn: () => employeeService.issueAdvance(advFor!.id, dealerId, {
+      amount: Number(advForm.amount),
+      payment_method: advForm.payment_method,
+      bank_account_id: advForm.payment_method === "bank" ? advForm.bank_account_id : null,
+      notes: advForm.notes || undefined,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["advances"] }); setAdvFor(null); setAdvForm({ amount: 0, payment_method: "cash", bank_account_id: "", notes: "" }); toast.success("Advance issued"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const cancelAdv = useMutation({
+    mutationFn: (id: string) => employeeService.cancelAdvance(id, dealerId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["advances"] }); toast.success("Advance cancelled"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
     setStructFor(emp);
     const s = await employeeService.getStructure(emp.id, dealerId);
     setStructForm(s ? { basic: Number(s.basic), house_rent_pct: Number(s.house_rent_pct), medical_pct: Number(s.medical_pct), transport_pct: Number(s.transport_pct), other_allowance: Number(s.other_allowance), deduction: Number(s.deduction) } : emptyStruct);
