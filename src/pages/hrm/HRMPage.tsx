@@ -191,6 +191,7 @@ const HRMPage = () => {
                         <TableCell><Badge variant={e.status === "active" ? "default" : "secondary"}>{e.status}</Badge></TableCell>
                         <TableCell className="space-x-2">
                           <Button size="sm" variant="outline" onClick={() => openStruct(e)}><Settings2 className="h-3 w-3 mr-1" />Salary Setup</Button>
+                          <Button size="sm" variant="outline" onClick={() => setAdvFor(e)}><HandCoins className="h-3 w-3 mr-1" />Advance</Button>
                           <Button size="sm" onClick={() => { setPayFor(e); setPayMethod("cash"); setPayBank(""); }}><Wallet className="h-3 w-3 mr-1" />Pay</Button>
                         </TableCell>
                       </TableRow>
