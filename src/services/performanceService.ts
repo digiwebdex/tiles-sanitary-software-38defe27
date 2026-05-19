@@ -54,8 +54,15 @@ export const performanceService = {
     return j<PerformanceReview[]>(`/api/performance${s ? `?${s}` : ""}`);
   },
   get: (id: string) => j<PerformanceReview>(`/api/performance/${id}`),
-  create: (data: Partial<PerformanceReview> & { kpis?: Partial<PerformanceKpi>[] }) =>
-    j<PerformanceReview>(`/api/performance`, jsonInit("POST", data)),
+  create: (data: {
+    employee_id: string;
+    period: string;
+    reviewer?: string | null;
+    strengths?: string | null;
+    improvements?: string | null;
+    comments?: string | null;
+    kpis?: Partial<PerformanceKpi>[];
+  }) => j<PerformanceReview>(`/api/performance`, jsonInit("POST", data)),
   update: (id: string, data: Partial<PerformanceReview>) =>
     j<PerformanceReview>(`/api/performance/${id}`, jsonInit("PUT", data)),
   remove: (id: string) =>
