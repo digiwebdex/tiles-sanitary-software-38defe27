@@ -66,6 +66,9 @@ const PurchaseReturnForm = ({ dealerId, onSubmit, isLoading }: PurchaseReturnFor
         sku: string;
         unit_type?: string | null;
         pieces_per_box?: number | null;
+        per_box_sft?: number | null;
+        stock_base_unit?: string | null;
+        sqft_per_piece?: number | null;
       }[];
     },
   });
@@ -77,7 +80,14 @@ const PurchaseReturnForm = ({ dealerId, onSubmit, isLoading }: PurchaseReturnFor
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(async (values) => {
+          // Phase T4b: enrich tile-SQFT items with qty_sqft + rate_unit.
+          const enriched = enrichItemsWithSqft(values.items as any[], productMap as any, { defaultRateUnit: "per_sqft" });
+          await onSubmit({ ...values, items: enriched } as PurchaseReturnFormValues);
+        })}
+        className="space-y-6"
+      >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FormField
             control={form.control}
