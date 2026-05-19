@@ -128,6 +128,7 @@ const HRMPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const openStruct = async (emp: Employee) => {
     setStructFor(emp);
     const s = await employeeService.getStructure(emp.id, dealerId);
     setStructForm(s ? { basic: Number(s.basic), house_rent_pct: Number(s.house_rent_pct), medical_pct: Number(s.medical_pct), transport_pct: Number(s.transport_pct), other_allowance: Number(s.other_allowance), deduction: Number(s.deduction) } : emptyStruct);
