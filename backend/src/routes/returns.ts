@@ -262,6 +262,8 @@ const purchaseReturnSchema = z.object({
       z.object({
         product_id: z.string().uuid(),
         quantity: z.coerce.number().positive(),
+        /** Phase T4a — canonical SQFT for tile (stock_base_unit='sqft' in T5) items. */
+        qty_sqft: z.coerce.number().min(0).optional().nullable(),
         unit_price: z.coerce.number().nonnegative(),
         reason: z.string().nullable().optional(),
       }),
