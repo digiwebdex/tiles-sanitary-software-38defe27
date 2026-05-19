@@ -72,6 +72,7 @@ import leadsRoutes from './routes/leads';
 import filesRoutes from './routes/files';
 import holidaysRoutes from './routes/holidays';
 import journalRoutes from './routes/journal';
+import emiRoutes from './routes/emi';
 import path from 'path';
 
 const app = express();
@@ -224,6 +225,7 @@ app.use('/api/leads', leadsRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/holidays', holidaysRoutes);
 app.use('/api/journal', journalRoutes);
+app.use('/api/emi', emiRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
