@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDealerId } from "@/hooks/useDealerId";
 import { employeeService, Employee } from "@/services/employeeService";
 import { bankAccountService } from "@/services/bankAccountService";
+import { shiftService } from "@/services/shiftService";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2 } from "lucide-react";
+import { Plus, Users, Wallet, Settings2, CalendarCheck, HandCoins, Trash2, Clock, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { FileText } from "lucide-react";
@@ -47,6 +48,8 @@ const HRMPage = () => {
   const today = new Date().toISOString().slice(0, 10);
   const [attDate, setAttDate] = useState(today);
   const [bulkStatus, setBulkStatus] = useState<Record<string, string>>({});
+  const [checkIns, setCheckIns] = useState<Record<string, string>>({});
+  const [bulkCheckIn, setBulkCheckIn] = useState("09:00");
   const [attPeriod, setAttPeriod] = useState(new Date().toISOString().slice(0, 7));
 
   // Advances
@@ -65,6 +68,17 @@ const HRMPage = () => {
   const { data: banks = [] } = useQuery({
     queryKey: ["bank-accounts", dealerId],
     queryFn: () => bankAccountService.list(dealerId), enabled: !!dealerId,
+  });
+  const { data: shifts = [] } = useQuery({
+    queryKey: ["shifts", dealerId],
+    queryFn: () => shiftService.list(), enabled: !!dealerId,
+  });
+  const shiftMap = Object.fromEntries(shifts.map((s) => [s.id, s]));
+  const assignShift = useMutation({
+    mutationFn: ({ id, shift_id }: { id: string; shift_id: string | null }) =>
+      employeeService.update(id, dealerId, { shift_id }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["employees"] }); toast.success("Shift assigned"); },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const createEmp = useMutation({
@@ -136,6 +150,30 @@ const HRMPage = () => {
     setStructForm(s ? { basic: Number(s.basic), house_rent_pct: Number(s.house_rent_pct), medical_pct: Number(s.medical_pct), transport_pct: Number(s.transport_pct), other_allowance: Number(s.other_allowance), deduction: Number(s.deduction) } : emptyStruct);
   };
 
+  const autoEvalOne = async (emp: Employee) => {
+    if (!emp.shift_id) { toast.error(`${emp.name} has no shift assigned`); return; }
+    const t = checkIns[emp.id] || bulkCheckIn;
+    try {
+      const r = await shiftService.evaluate(emp.shift_id, t, attDate);
+      setBulkStatus((prev) => ({ ...prev, [emp.id]: r.suggested_status }));
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const autoEvalAll = async () => {
+    const targets = employees.filter((e) => e.status === "active" && e.shift_id);
+    if (!targets.length) { toast.error("No active employees with shifts"); return; }
+    const updates: Record<string, string> = {};
+    await Promise.all(targets.map(async (emp) => {
+      const t = checkIns[emp.id] || bulkCheckIn;
+      try {
+        const r = await shiftService.evaluate(emp.shift_id!, t, attDate);
+        updates[emp.id] = r.suggested_status;
+      } catch { /* skip */ }
+    }));
+    setBulkStatus((prev) => ({ ...prev, ...updates }));
+    toast.success(`Auto-filled ${Object.keys(updates).length} employee(s)`);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -181,7 +219,7 @@ const HRMPage = () => {
                 <Table>
                   <TableHeader><TableRow>
                     <TableHead>Code</TableHead><TableHead>Name</TableHead><TableHead>Designation</TableHead>
-                    <TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                    <TableHead>Phone</TableHead><TableHead>Shift</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {employees.map(e => (
@@ -190,6 +228,20 @@ const HRMPage = () => {
                         <TableCell className="font-medium">{e.name}</TableCell>
                         <TableCell>{e.designation || "—"}</TableCell>
                         <TableCell>{e.phone || "—"}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={e.shift_id ?? "__none"}
+                            onValueChange={(v) => assignShift.mutate({ id: e.id, shift_id: v === "__none" ? null : v })}
+                          >
+                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none">— None —</SelectItem>
+                              {shifts.filter(s => s.is_active).map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.name} ({s.start_time})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                         <TableCell><Badge variant={e.status === "active" ? "default" : "secondary"}>{e.status}</Badge></TableCell>
                         <TableCell className="space-x-2">
                           <Button size="sm" variant="outline" onClick={() => openStruct(e)}><Settings2 className="h-3 w-3 mr-1" />Salary Setup</Button>
@@ -198,7 +250,7 @@ const HRMPage = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {!employees.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No employees yet.</TableCell></TableRow>}
+                    {!employees.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No employees yet.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               )}
@@ -210,25 +262,52 @@ const HRMPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
               <CardTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5 text-primary" />Daily Attendance</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Label className="text-xs">Date</Label>
                 <Input type="date" value={attDate} onChange={e => setAttDate(e.target.value)} className="w-40" />
+                <Label className="text-xs ml-2 flex items-center gap-1"><Clock className="h-3 w-3" />Default Check-in</Label>
+                <Input type="time" value={bulkCheckIn} onChange={e => setBulkCheckIn(e.target.value)} className="w-28" />
+                <Button size="sm" variant="outline" onClick={autoEvalAll}><Wand2 className="h-3 w-3 mr-1" />Auto-fill All</Button>
                 <Button size="sm" onClick={() => saveBulk.mutate()} disabled={saveBulk.isPending}>Save Marks</Button>
               </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader><TableRow>
-                  <TableHead>Employee</TableHead><TableHead>Designation</TableHead>
-                  <TableHead>Today's Mark</TableHead><TableHead>Status (saved)</TableHead>
+                  <TableHead>Employee</TableHead><TableHead>Shift</TableHead>
+                  <TableHead>Check-in</TableHead><TableHead>Today's Mark</TableHead>
+                  <TableHead>Status (saved)</TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                   {employees.filter(e => e.status === "active").map(e => {
                     const saved = attRows.find((r: any) => r.employee_id === e.id);
+                    const shift = e.shift_id ? shiftMap[e.shift_id] : null;
                     return (
                       <TableRow key={e.id}>
-                        <TableCell className="font-medium">{e.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{e.designation || "—"}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">{e.name}</div>
+                          <div className="text-xs text-muted-foreground">{e.designation || "—"}</div>
+                        </TableCell>
+                        <TableCell>
+                          {shift ? (
+                            <Badge variant="outline" className="text-xs">{shift.name} · {shift.start_time}</Badge>
+                          ) : <span className="text-muted-foreground text-xs">— none —</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="time"
+                              value={checkIns[e.id] ?? ""}
+                              placeholder={bulkCheckIn}
+                              onChange={(ev) => setCheckIns({ ...checkIns, [e.id]: ev.target.value })}
+                              className="w-24 h-8 text-xs"
+                              disabled={!e.shift_id}
+                            />
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => autoEvalOne(e)} disabled={!e.shift_id} title="Auto-evaluate based on shift">
+                              <Wand2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Select value={bulkStatus[e.id] ?? saved?.status ?? ""} onValueChange={(v) => setBulkStatus({ ...bulkStatus, [e.id]: v })}>
                             <SelectTrigger className="w-36"><SelectValue placeholder="—" /></SelectTrigger>

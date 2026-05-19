@@ -14,6 +14,7 @@ export interface Employee {
   joining_date: string | null;
   status: "active" | "inactive" | "terminated";
   notes: string | null;
+  shift_id?: string | null;
 }
 
 export interface SalaryStructure {
