@@ -79,6 +79,7 @@ import leavesRoutes from './routes/leaves';
 import salaryComponentsRoutes from './routes/salaryComponents';
 import employeeDocumentsRoutes from './routes/employeeDocuments';
 import shiftsRoutes from './routes/shifts';
+import performanceRoutes from './routes/performance';
 import path from 'path';
 
 const app = express();
@@ -238,6 +239,7 @@ app.use('/api/leaves', leavesRoutes);
 app.use('/api/salary-components', salaryComponentsRoutes);
 app.use('/api/employee-documents', employeeDocumentsRoutes);
 app.use('/api/shifts', shiftsRoutes);
+app.use('/api/performance', performanceRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
