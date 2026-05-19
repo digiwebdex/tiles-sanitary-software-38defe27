@@ -21,6 +21,8 @@ const CreateSalesReturnPage = () => {
         sale_id: values.sale_id,
         product_id: values.product_id,
         qty: values.qty,
+        qty_sqft: (values as any).qty_sqft,
+        rate_unit: (values as any).rate_unit,
         reason: values.reason || "",
         is_broken: values.is_broken,
         refund_amount: values.refund_amount,
