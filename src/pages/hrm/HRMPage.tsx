@@ -204,6 +204,116 @@ const HRMPage = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="attendance" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+              <CardTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5 text-primary" />Daily Attendance</CardTitle>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Date</Label>
+                <Input type="date" value={attDate} onChange={e => setAttDate(e.target.value)} className="w-40" />
+                <Button size="sm" onClick={() => saveBulk.mutate()} disabled={saveBulk.isPending}>Save Marks</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Employee</TableHead><TableHead>Designation</TableHead>
+                  <TableHead>Today's Mark</TableHead><TableHead>Status (saved)</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {employees.filter(e => e.status === "active").map(e => {
+                    const saved = attRows.find((r: any) => r.employee_id === e.id);
+                    return (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">{e.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{e.designation || "—"}</TableCell>
+                        <TableCell>
+                          <Select value={bulkStatus[e.id] ?? saved?.status ?? ""} onValueChange={(v) => setBulkStatus({ ...bulkStatus, [e.id]: v })}>
+                            <SelectTrigger className="w-36"><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="present">Present</SelectItem>
+                              <SelectItem value="absent">Absent</SelectItem>
+                              <SelectItem value="leave">Leave</SelectItem>
+                              <SelectItem value="half">Half Day</SelectItem>
+                              <SelectItem value="late">Late</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>{saved ? <Badge variant="outline">{saved.status}</Badge> : <span className="text-muted-foreground text-xs">unmarked</span>}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Monthly Summary</CardTitle>
+              <Input type="month" value={attPeriod} onChange={e => setAttPeriod(e.target.value)} className="w-40" />
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Employee</TableHead><TableHead className="text-right">Present</TableHead>
+                  <TableHead className="text-right">Absent</TableHead><TableHead className="text-right">Leave</TableHead>
+                  <TableHead className="text-right">Half</TableHead><TableHead className="text-right">Late</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {attSummary.map((s: any) => (
+                    <TableRow key={s.employee_id}>
+                      <TableCell className="font-medium">{s.employee_name}</TableCell>
+                      <TableCell className="text-right font-mono text-green-500">{s.present}</TableCell>
+                      <TableCell className="text-right font-mono text-red-500">{s.absent}</TableCell>
+                      <TableCell className="text-right font-mono">{s.leave}</TableCell>
+                      <TableCell className="text-right font-mono">{s.half}</TableCell>
+                      <TableCell className="text-right font-mono text-amber-500">{s.late}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold">{s.total_days}</TableCell>
+                    </TableRow>
+                  ))}
+                  {!attSummary.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No attendance for {attPeriod}.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="advances">
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><HandCoins className="h-5 w-5 text-primary" />Salary Advances</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">Open advances are auto-deducted from the next monthly salary payment.</p>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Date</TableHead><TableHead>Employee</TableHead>
+                  <TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Settled</TableHead>
+                  <TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {advances.map((a: any) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="text-xs">{new Date(a.issue_date).toLocaleDateString()}</TableCell>
+                      <TableCell className="font-medium">{a.employee_name}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(Number(a.amount))}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(Number(a.settled_amount))}</TableCell>
+                      <TableCell><Badge variant="outline">{a.payment_method}</Badge></TableCell>
+                      <TableCell><Badge variant={a.status === "open" ? "default" : "secondary"}>{a.status}</Badge></TableCell>
+                      <TableCell>
+                        {a.status === "open" && (
+                          <Button size="sm" variant="ghost" onClick={() => cancelAdv.mutate(a.id)}><Trash2 className="h-3 w-3" /></Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!advances.length && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">No advances issued.</TableCell></TableRow>}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="payments">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
