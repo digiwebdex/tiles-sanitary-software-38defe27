@@ -150,6 +150,30 @@ const HRMPage = () => {
     setStructForm(s ? { basic: Number(s.basic), house_rent_pct: Number(s.house_rent_pct), medical_pct: Number(s.medical_pct), transport_pct: Number(s.transport_pct), other_allowance: Number(s.other_allowance), deduction: Number(s.deduction) } : emptyStruct);
   };
 
+  const autoEvalOne = async (emp: Employee) => {
+    if (!emp.shift_id) { toast.error(`${emp.name} has no shift assigned`); return; }
+    const t = checkIns[emp.id] || bulkCheckIn;
+    try {
+      const r = await shiftService.evaluate(emp.shift_id, t, attDate);
+      setBulkStatus((prev) => ({ ...prev, [emp.id]: r.suggested_status }));
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  const autoEvalAll = async () => {
+    const targets = employees.filter((e) => e.status === "active" && e.shift_id);
+    if (!targets.length) { toast.error("No active employees with shifts"); return; }
+    const updates: Record<string, string> = {};
+    await Promise.all(targets.map(async (emp) => {
+      const t = checkIns[emp.id] || bulkCheckIn;
+      try {
+        const r = await shiftService.evaluate(emp.shift_id!, t, attDate);
+        updates[emp.id] = r.suggested_status;
+      } catch { /* skip */ }
+    }));
+    setBulkStatus((prev) => ({ ...prev, ...updates }));
+    toast.success(`Auto-filled ${Object.keys(updates).length} employee(s)`);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
