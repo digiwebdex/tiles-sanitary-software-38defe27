@@ -73,6 +73,8 @@ import filesRoutes from './routes/files';
 import holidaysRoutes from './routes/holidays';
 import journalRoutes from './routes/journal';
 import emiRoutes from './routes/emi';
+import branchesRoutes from './routes/branches';
+import noticesRoutes from './routes/notices';
 import path from 'path';
 
 const app = express();
@@ -226,6 +228,8 @@ app.use('/api/files', filesRoutes);
 app.use('/api/holidays', holidaysRoutes);
 app.use('/api/journal', journalRoutes);
 app.use('/api/emi', emiRoutes);
+app.use('/api/branches', branchesRoutes);
+app.use('/api/notices', noticesRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
