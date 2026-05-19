@@ -310,7 +310,11 @@ const saleItemSchema = z.object({
   /** Optional dual-unit fields. If omitted, derived from `quantity` + product ppb. */
   box_qty: z.coerce.number().min(0).optional(),
   piece_qty: z.coerce.number().min(0).optional(),
+  /** Phase T4a — canonical SQFT qty for tile (stock_base_unit='sqft' in T5) items. */
+  qty_sqft: z.coerce.number().min(0).optional().nullable(),
   sale_rate: z.coerce.number().min(0),
+  /** 'per_piece' | 'per_box' | 'per_sqft'. NULL → legacy per_piece. */
+  rate_unit: z.enum(['per_piece', 'per_box', 'per_sqft']).optional().nullable(),
   rate_source: z.enum(['default', 'tier', 'manual']).optional(),
   tier_id: z.string().uuid().nullable().optional(),
   original_resolved_rate: z.coerce.number().nullable().optional(),
