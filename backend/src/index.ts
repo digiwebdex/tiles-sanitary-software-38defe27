@@ -82,6 +82,7 @@ import shiftsRoutes from './routes/shifts';
 import performanceRoutes from './routes/performance';
 import trainingRoutes from './routes/training';
 import assetsRoutes from './routes/assets';
+import employeeLoansRoutes from './routes/employeeLoans';
 import path from 'path';
 
 const app = express();
@@ -244,6 +245,7 @@ app.use('/api/shifts', shiftsRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/training', trainingRoutes);
 app.use('/api/assets', assetsRoutes);
+app.use('/api/employee-loans', employeeLoansRoutes);
 
 // Static file serving for uploaded product images, etc.
 app.use(
