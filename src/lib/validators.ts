@@ -78,6 +78,8 @@ export const createSaleServiceSchema = z.object({
   items: z.array(z.object({
     product_id: uuidSchema,
     quantity: z.number().positive("Quantity must be > 0"),
+    qty_sqft: z.number().min(0).optional(),
+    rate_unit: z.enum(["per_piece", "per_box", "per_sqft"]).optional(),
     sale_rate: z.number().min(0, "Sale rate cannot be negative"),
   })).min(1, "At least one item required"),
 });
